@@ -2,10 +2,14 @@ package com.example.epact.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
-
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val PactBlack = Color(0xFF0B0E11)
+val PactSurface = Color(0xFF11161B)
+val PactSurfaceAlt = Color(0xFF171D23)
+val PactCard = Color(0xFF1D252D)
+val PactBorder = Color(0xFF2A343F)
+val PactGreen = Color(0xFF1E6B57)
+val PactGreenSoft = Color(0xFF224B41)
+val PactAccent = Color(0xFFE6822E)
+val PactAccentSoft = Color(0xFF4A3422)
+val PactText = Color(0xFFF3F5F7)
+val PactMuted = Color(0xFF9EABB8)
