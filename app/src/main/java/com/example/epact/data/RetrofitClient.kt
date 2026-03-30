@@ -4,13 +4,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    // Se estiver no emulador, use 10.0.2.2. Se for celular real, use seu IP.
-    private const val BASE_URL = "http://10.99.34.108:1337/"
+    private const val BASE_URL = "https://meaningful-desire-049927a41b.strapiapp.com/"
 
     val instance: StrapiApiService by lazy {
-        val retrofit = Retrofit.Builder()
+        val retrofit = retrofit2.Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
 
         retrofit.create(StrapiApiService::class.java)
