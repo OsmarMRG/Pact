@@ -10,7 +10,9 @@
         android:label="EPACT"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Epact">
+        android:theme="@style/Theme.Epact"
+        android:usesCleartextTraffic="true">
+
 
         <activity
             android:name=".MainActivity"

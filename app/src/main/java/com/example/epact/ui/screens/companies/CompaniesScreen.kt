@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.epact.data.AppData.companies
 import com.example.epact.model.Company
 import com.example.epact.ui.components.CategoryFilters
 import com.example.epact.ui.components.CompanyCard
@@ -32,19 +34,20 @@ import com.example.epact.ui.theme.PactMuted
 
 @Composable
 fun CompaniesScreen(
-    companies: List<Company>,
+    viewModel: CompanyViewModel = viewModel(), // Agora usa o ViewModel
     categories: List<String>,
     onCompanyClick: (Int) -> Unit
 ) {
+    val companies by viewModel.companies // Lista vinda da API
     var search by rememberSaveable { mutableStateOf("") }
     var selectedCategory by rememberSaveable { mutableStateOf("Todos") }
 
-    val filteredCompanies = companies.filter { company ->
-        val matchesSearch = company.name.contains(search, ignoreCase = true) ||
-            company.category.contains(search, ignoreCase = true) ||
-            company.city.contains(search, ignoreCase = true)
+    val filteredCompanies = companies.filter { item ->
+        val attr = item.attributes
+        val matchesSearch = attr.nome.contains(search, ignoreCase = true) ||
+                attr.descricao.contains(search, ignoreCase = true)
 
-        val matchesCategory = selectedCategory == "Todos" || company.category == selectedCategory
+        val matchesCategory = selectedCategory == "Todos" || attr.category == selectedCategory
         matchesSearch && matchesCategory
     }
 
@@ -87,7 +90,7 @@ fun CompaniesScreen(
         }
 
         items(filteredCompanies) { company ->
-            CompanyCard(company = company) {
+            CompanyCardFromApi(empresaData = item) {
                 onCompanyClick(company.id)
             }
         }

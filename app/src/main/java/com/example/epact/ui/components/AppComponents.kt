@@ -225,24 +225,24 @@ fun CompanyCard(company: Company, onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
 
-//            if (company.logoRes != null) {
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .clip(RoundedCornerShape(18.dp))
-//                        .background(PactSurfaceAlt)
-//                        .padding(12.dp),
-//                    contentAlignment = Alignment.Center
-//                ) {
-//                    androidx.compose.foundation.Image(
-//                        painter = androidx.compose.ui.res.painterResource(id = company.logoRes),
-//                        contentDescription = company.name,
-//                        modifier = Modifier.height(52.dp)
-//                    )
-//                }
-//
-//                Spacer(modifier = Modifier.height(12.dp))
-//            }
+            if (company.logoRes != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(PactSurfaceAlt)
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = company.logoRes),
+                        contentDescription = company.name,
+                        modifier = Modifier.height(52.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
