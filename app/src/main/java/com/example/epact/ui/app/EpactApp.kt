@@ -97,7 +97,6 @@ fun EpactApp() {
             }
             composable(AppDestinations.Companies) {
                 CompaniesScreen(
-                    companies = AppData.companies,
                     categories = AppData.categories,
                     onCompanyClick = { companyId ->
                         navController.navigate(AppDestinations.companyDetail(companyId))
@@ -106,9 +105,8 @@ fun EpactApp() {
             }
             composable(AppDestinations.CompanyDetail) { backStackEntry ->
                 val companyId = backStackEntry.arguments?.getString("companyId")?.toIntOrNull()
-                val company = AppData.companies.firstOrNull { it.id == companyId }
-                if (company != null) {
-                    CompanyDetailScreen(company = company)
+                if (companyId != null) {
+                    CompanyDetailScreen(companyId = companyId)
                 }
             }
             composable(AppDestinations.Map) {

@@ -68,9 +68,39 @@ import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
 
 @Composable
-fun CompanyDetailScreen(company: Company) {
+fun CompanyDetailScreen(
+    companyId: Int,
+    viewModel: CompanyViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     val context = LocalContext.current
     var lightboxIndex by remember { mutableStateOf<Int?>(null) }
+
+    val companies by viewModel.companies
+    val empresaData = companies.firstOrNull { it.id == companyId }
+
+    if (empresaData == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Empresa não encontrada", color = PactText)
+        }
+        return
+    }
+
+    val attr = empresaData.attributes
+    val company = Company(
+        id = empresaData.id,
+        name = attr.nome,
+        category = attr.category ?: "Sem categoria",
+        city = attr.city ?: "",
+        shortDescription = attr.descricao,
+        fullDescription = attr.descricao,
+        website = attr.url ?: "",
+        tags = attr.tags ?: emptyList(),
+        logoRes = null,
+        gallery = emptyList()
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
 
