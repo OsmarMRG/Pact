@@ -13,9 +13,13 @@ data class EmpresaData(
     val descricao: String?,
     val url: String?,
     val ativo: Boolean?,
+    val city: String?,
+    val category: String?,
+
+
 
     // Para as imagens no Strapi 5, elas também perderam o 'attributes'
-    val logo: StrapiMediaData? = null,
+    val logoRes: StrapiMediaData? = null,
     val Galeria: List<StrapiMediaData>? = emptyList()
 )
 

@@ -8,9 +8,9 @@ import com.example.epact.model.EmpresaData
 import kotlinx.coroutines.launch
 
 class CompanyViewModel : ViewModel() {
-    // Esta será a nossa nova lista que vem do Strapi
     var companies = mutableStateOf<List<EmpresaData>>(emptyList())
     var isLoading = mutableStateOf(false)
+    var errorMessage = mutableStateOf<String?>(null)
 
     init {
         loadCompanies()
@@ -19,18 +19,16 @@ class CompanyViewModel : ViewModel() {
     fun loadCompanies() {
         viewModelScope.launch {
             isLoading.value = true
+            errorMessage.value = null
             try {
                 val response = RetrofitClient.instance.getEmpresas()
-                companies.value = response.data
+                companies.value = response.data ?: emptyList()
             } catch (e: Exception) {
                 e.printStackTrace()
+                errorMessage.value = "Erro ao carregar empresas"
             } finally {
                 isLoading.value = false
             }
         }
     }
-
-    // Aqui no futuro adicionaremos as funções para:
-    // fun deleteCompany(id: Int) { ... }
-    // fun updateCompany(id: Int, attributes: EmpresaAttributes) { ... }
 }

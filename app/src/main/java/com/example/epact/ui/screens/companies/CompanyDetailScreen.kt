@@ -2,7 +2,6 @@ package com.example.epact.ui.screens.companies
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +33,7 @@ import androidx.compose.material.icons.filled.NavigateBefore
 import androidx.compose.material.icons.filled.NavigateNext
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -49,14 +49,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.epact.model.Company
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.epact.model.CompanyImage
+import com.example.epact.model.StrapiMediaData
 import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
@@ -67,43 +67,44 @@ import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
 
+private const val STRAPI_BASE = "https://meaningful-desire-049927a41b.strapiapp.com"
+
 @Composable
 fun CompanyDetailScreen(
     companyId: Int,
-    viewModel: CompanyViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: CompanyViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var lightboxIndex by remember { mutableStateOf<Int?>(null) }
-
     val companies by viewModel.companies
-    val empresaData = companies.firstOrNull { it.id == companyId }
+    val isLoading by viewModel.isLoading
 
-    if (empresaData == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Empresa não encontrada", color = PactText)
+    if (isLoading) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PactAccent)
         }
         return
     }
 
-    val attr = empresaData.attributes
-    val company = Company(
-        id = empresaData.id,
-        name = attr.nome,
-        category = attr.category ?: "Sem categoria",
-        city = attr.city ?: "",
-        shortDescription = attr.descricao,
-        fullDescription = attr.descricao,
-        website = attr.url ?: "",
-        tags = attr.tags ?: emptyList(),
-        logoRes = null,
-        gallery = emptyList()
-    )
+    // Strapi v5: EmpresaData tem campos diretos, sem .attributes
+    val empresa = companies.firstOrNull { it.id == companyId }
+
+    if (empresa == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Empresa não encontrada", color = PactMuted)
+        }
+        return
+    }
+
+    val nome = empresa.nome ?: "Sem nome"
+    val descricao = empresa.descricao ?: ""
+    val category = empresa.category ?: "Sem categoria"
+    val city = empresa.city ?: ""
+    val website = empresa.url ?: ""
+    val galeria = empresa.Galeria ?: emptyList()
+
+    var lightboxIndex by remember { mutableStateOf<Int?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -111,19 +112,17 @@ fun CompanyDetailScreen(
                 .background(PactBlack)
         ) {
 
-            // ── 1. HEADER STRIP ─────────────────────────────────────────────
+            // ── 1. HEADER STRIP ──────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
                     .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF063E32), PactGreen)
-                        )
+                        Brush.linearGradient(listOf(Color(0xFF063E32), PactGreen))
                     )
             )
 
-            // ── 2. LOGO FLUTUANTE + FAVORITO ────────────────────────────────
+            // ── 2. LOGO FLUTUANTE + FAVORITO ─────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -140,27 +139,15 @@ fun CompanyDetailScreen(
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         modifier = Modifier.size(58.dp)
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (company.logoRes != null) {
-                                androidx.compose.foundation.Image(
-                                    painter = painterResource(id = company.logoRes),
-                                    contentDescription = company.name,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(8.dp),
-                                    contentScale = ContentScale.Fit
-                                )
-                            } else {
-                                Text(
-                                    text = company.name.first().toString(),
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PactGreen
-                                )
-                            }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            // Futuramente: AsyncImage com empresa.logo?.url via Coil
+                            // val logoUrl = STRAPI_BASE + (empresa.logo?.url ?: "")
+                            Text(
+                                text = nome.first().toString(),
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PactGreen
+                            )
                         }
                     }
 
@@ -173,58 +160,41 @@ fun CompanyDetailScreen(
                             .clickable { },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorito",
-                            tint = PactMuted,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Default.FavoriteBorder, "Favorito", tint = PactMuted,
+                            modifier = Modifier.size(18.dp))
                     }
                 }
             }
 
-            // ── 3. NOME E CATEGORIA ─────────────────────────────────────────
+            // ── 3. NOME E CATEGORIA ──────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
                     .offset(y = (-12).dp)
             ) {
+                Text(nome, fontSize = 22.sp, fontWeight = FontWeight.Bold,
+                    color = PactText, lineHeight = 28.sp)
+                Spacer(Modifier.height(3.dp))
                 Text(
-                    text = company.name,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PactText,
-                    lineHeight = 28.sp
-                )
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = if (company.city.isNotBlank())
-                        "${company.category} · ${company.city}"
-                    else
-                        company.category,
-                    fontSize = 13.sp,
-                    color = PactAccent,
-                    fontWeight = FontWeight.Medium
+                    text = if (city.isNotBlank()) "$category · $city" else category,
+                    fontSize = 13.sp, color = PactAccent, fontWeight = FontWeight.Medium
                 )
             }
 
             Divider()
 
-            // ── 4. GALERIA DA EMPRESA ───────────────────────────────────────
-            if (company.gallery.isNotEmpty()) {
+            // ── 4. GALERIA DO STRAPI ─────────────────────────────────────────
+            if (galeria.isNotEmpty()) {
                 Column(modifier = Modifier.padding(vertical = 18.dp)) {
-                    SectionLabel(
-                        text = "GALERIA",
-                        modifier = Modifier.padding(horizontal = 20.dp)
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    SectionLabel("GALERIA", Modifier.padding(horizontal = 20.dp))
+                    Spacer(Modifier.height(10.dp))
                     LazyRow(
                         contentPadding = PaddingValues(horizontal = 20.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        itemsIndexed(company.gallery) { index, item ->
-                            GalleryCard(
-                                item = item,
+                        itemsIndexed(galeria) { index, media ->
+                            StrapiGalleryCard(
+                                media = media,
                                 onClick = { lightboxIndex = index }
                             )
                         }
@@ -233,62 +203,26 @@ fun CompanyDetailScreen(
                 Divider()
             }
 
-            // ── 5. SOBRE ────────────────────────────────────────────────────
+            // ── 5. SOBRE ─────────────────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 18.dp)
             ) {
-                SectionLabel(text = "SOBRE")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = company.fullDescription,
-                    fontSize = 14.sp,
-                    color = PactText,
-                    lineHeight = 22.sp
-                )
+                SectionLabel("SOBRE")
+                Spacer(Modifier.height(8.dp))
+                Text(descricao, fontSize = 14.sp, color = PactText, lineHeight = 22.sp)
             }
 
             Divider()
 
-            // ── 6. ÁREAS / TAGS ─────────────────────────────────────────────
-            if (company.tags.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
-                ) {
-                    SectionLabel(text = "ÁREAS")
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        company.tags.forEach { tag ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(PactSurfaceAlt)
-                                    .border(0.5.dp, PactBorder, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(tag, fontSize = 12.sp, color = PactText)
-                            }
-                        }
-                    }
-                }
-                Divider()
-            }
-
-            // ── 7. WEBSITE ──────────────────────────────────────────────────
-            if (!company.website.isNullOrBlank()) {
+            // ── 6. WEBSITE ───────────────────────────────────────────────────
+            if (website.isNotBlank()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(company.website))
-                            )
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(website)))
                         }
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -301,29 +235,19 @@ fun CompanyDetailScreen(
                             .background(PactSurfaceAlt),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Language,
-                            contentDescription = null,
-                            tint = PactMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        Icon(Icons.Default.Language, null, tint = PactMuted, modifier = Modifier.size(16.dp))
                     }
                     Text(
-                        text = company.website
-                            .removePrefix("https://")
-                            .removePrefix("http://")
-                            .removeSuffix("/"),
-                        fontSize = 13.sp,
-                        color = PactAccent,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1
+                        text = website.removePrefix("https://").removePrefix("http://").removeSuffix("/"),
+                        fontSize = 13.sp, color = PactAccent,
+                        modifier = Modifier.weight(1f), maxLines = 1
                     )
                     Text("›", fontSize = 20.sp, color = PactMuted)
                 }
                 Divider()
             }
 
-            // ── 8. BOTÃO CTA ────────────────────────────────────────────────
+            // ── 7. BOTÃO CTA ─────────────────────────────────────────────────
             Box(modifier = Modifier.padding(20.dp)) {
                 Box(
                     modifier = Modifier
@@ -331,31 +255,24 @@ fun CompanyDetailScreen(
                         .clip(RoundedCornerShape(14.dp))
                         .background(PactAccent)
                         .clickable {
-                            if (!company.website.isNullOrBlank()) {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(company.website))
-                                )
+                            if (website.isNotBlank()) {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(website)))
                             }
                         }
                         .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Visitar site",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
+                    Text("Visitar site", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
         }
 
-        // ── 9. LIGHTBOX ─────────────────────────────────────────────────────
+        // ── 8. LIGHTBOX ──────────────────────────────────────────────────────
         lightboxIndex?.let { index ->
-            GalleryLightbox(
-                items = company.gallery,
+            StrapiLightbox(
+                items = galeria,
                 initialIndex = index,
                 onDismiss = { lightboxIndex = null }
             )
@@ -363,251 +280,142 @@ fun CompanyDetailScreen(
     }
 }
 
-// ─── Componentes auxiliares ────────────────────────────────────────────────
+// ─── Card de galeria do Strapi ───────────────────────────────────────────────
 
 @Composable
-private fun Divider() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(0.5.dp)
-            .background(PactBorder)
-    )
-}
-
-@Composable
-private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = PactMuted,
-        letterSpacing = 0.08.sp,
-        modifier = modifier
-    )
-}
-
-@Composable
-fun GalleryCard(item: CompanyImage, onClick: () -> Unit) {
+fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .width(160.dp)
             .height(110.dp)
             .clip(RoundedCornerShape(14.dp))
+            .background(PactGreenSoft)
             .clickable { onClick() }
     ) {
-        // ── Quando tiveres imagens reais, substitui este bloco por: ─────────
-        // Image(
-        //     painter = painterResource(id = item.imageRes),
-        //     contentDescription = item.caption,
+        // Futuramente substitui por AsyncImage quando tiveres Coil:
+        // AsyncImage(
+        //     model = STRAPI_BASE + (media.url ?: ""),
+        //     contentDescription = media.name,
         //     modifier = Modifier.fillMaxSize(),
         //     contentScale = ContentScale.Crop
         // )
-        // ────────────────────────────────────────────────────────────────────
 
-        // Placeholder (remove quando tiveres imagens reais)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(PactGreenSoft),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.Image,
-                    contentDescription = null,
-                    tint = PactGreen,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = item.placeholderLabel,
-                    fontSize = 11.sp,
-                    color = PactMuted
-                )
-            }
+        // Placeholder
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
         }
 
-        // Overlay com legenda
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
-                        startY = 40f
-                    )
-                )
+                .background(Brush.verticalGradient(
+                    listOf(Color.Transparent, Color.Black.copy(0.55f)), startY = 40f))
         )
         Text(
-            text = item.caption,
-            fontSize = 11.sp,
-            color = Color.White,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(8.dp)
+            text = media.name ?: "",
+            fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium,
+            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
         )
     }
 }
 
+// ─── Lightbox do Strapi ──────────────────────────────────────────────────────
+
 @Composable
-fun GalleryLightbox(
-    items: List<CompanyImage>,
-    initialIndex: Int,
-    onDismiss: () -> Unit
-) {
-    var currentIndex by remember { mutableStateOf(initialIndex) }
+fun StrapiLightbox(items: List<StrapiMediaData>, initialIndex: Int, onDismiss: () -> Unit) {
+    var currentIndex by remember { mutableStateOf(initialIndex.coerceIn(0, items.size - 1)) }
     val item = items[currentIndex]
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        ) {
-            // ── Imagem principal ─────────────────────────────────────────────
-            // Quando tiveres imagens reais, substitui por:
-            // Image(
-            //     painter = painterResource(id = item.imageRes),
-            //     contentDescription = item.caption,
-            //     modifier = Modifier.fillMaxSize(),
-            //     contentScale = ContentScale.Fit
-            // )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(PactGreenSoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = null,
-                        tint = PactGreen,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(item.placeholderLabel, color = PactMuted, fontSize = 16.sp)
-                }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+
+            // Placeholder — substitui por AsyncImage com Coil
+            Box(Modifier.fillMaxSize().background(PactGreenSoft), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(64.dp))
             }
 
-            // Gradiente superior
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Black.copy(0.7f), Color.Transparent)
-                        )
-                    )
-            )
+            Box(Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(0.75f), Color.Transparent))))
+            Box(Modifier.fillMaxWidth().height(140.dp).align(Alignment.BottomCenter)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f)))))
 
-            // Gradiente inferior
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(0.75f))
-                        )
-                    )
-            )
+            Text("${currentIndex + 1} / ${items.size}", color = Color.White.copy(0.7f),
+                fontSize = 13.sp, modifier = Modifier.align(Alignment.TopStart).padding(20.dp))
 
-            // Botão fechar
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Fechar", tint = Color.White)
+            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                Icon(Icons.Default.Close, "Fechar", tint = Color.White)
             }
-
-            // Contador de posição (ex: 2 / 4)
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = "${currentIndex + 1} / ${items.size}",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            // Seta anterior
             if (currentIndex > 0) {
-                IconButton(
-                    onClick = { currentIndex-- },
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(0.4f))
-                ) {
-                    Icon(
-                        Icons.Default.NavigateBefore,
-                        contentDescription = "Anterior",
-                        tint = Color.White
-                    )
+                IconButton(onClick = { currentIndex-- },
+                    modifier = Modifier.align(Alignment.CenterStart).padding(8.dp)
+                        .clip(CircleShape).background(Color.Black.copy(0.45f))) {
+                    Icon(Icons.Default.NavigateBefore, "Anterior", tint = Color.White)
                 }
             }
-
-            // Seta seguinte
             if (currentIndex < items.size - 1) {
-                IconButton(
-                    onClick = { currentIndex++ },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(0.4f))
-                ) {
-                    Icon(
-                        Icons.Default.NavigateNext,
-                        contentDescription = "Seguinte",
-                        tint = Color.White
-                    )
+                IconButton(onClick = { currentIndex++ },
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(8.dp)
+                        .clip(CircleShape).background(Color.Black.copy(0.45f))) {
+                    Icon(Icons.Default.NavigateNext, "Seguinte", tint = Color.White)
                 }
             }
 
-            // Legenda + pontos indicadores
             Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp, start = 24.dp, end = 24.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 36.dp, start = 24.dp, end = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = item.caption,
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(14.dp))
+                Text(item.name ?: "", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items.indices.forEach { i ->
-                        Box(
-                            modifier = Modifier
-                                .size(if (i == currentIndex) 8.dp else 5.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (i == currentIndex) Color.White
-                                    else Color.White.copy(alpha = 0.35f)
-                                )
-                        )
+                        Box(modifier = Modifier
+                            .size(if (i == currentIndex) 8.dp else 5.dp)
+                            .clip(CircleShape)
+                            .background(if (i == currentIndex) Color.White else Color.White.copy(0.3f)))
                     }
                 }
+            }
+        }
+    }
+}
+
+// ─── Auxiliares ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun Divider() {
+    Box(Modifier.fillMaxWidth().height(0.5.dp).background(PactBorder))
+}
+
+@Composable
+private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+        color = PactMuted, letterSpacing = 0.08.sp, modifier = modifier)
+}
+
+// Mantém compatibilidade com GalleryCard/GalleryLightbox antigos se necessário
+@Composable
+fun GalleryCard(item: CompanyImage, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.width(160.dp).height(110.dp)
+            .clip(RoundedCornerShape(14.dp)).background(PactGreenSoft).clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
+        Box(Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.55f)), startY = 40f)))
+        Text(item.caption, fontSize = 11.sp, color = Color.White,
+            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp))
+    }
+}
+
+@Composable
+fun GalleryLightbox(items: List<CompanyImage>, initialIndex: Int, onDismiss: () -> Unit) {
+    var currentIndex by remember { mutableStateOf(initialIndex) }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(64.dp))
+            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
+                Icon(Icons.Default.Close, "Fechar", tint = Color.White)
             }
         }
     }
