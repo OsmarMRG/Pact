@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.epact.model.CompanyImage
 import com.example.epact.model.StrapiMediaData
 import com.example.epact.ui.theme.PactAccent
@@ -66,8 +67,6 @@ import com.example.epact.ui.theme.PactGreenSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
-
-private const val STRAPI_BASE = "https://meaningful-desire-049927a41b.strapiapp.com"
 
 @Composable
 fun CompanyDetailScreen(
@@ -85,7 +84,6 @@ fun CompanyDetailScreen(
         return
     }
 
-    // Strapi v5: EmpresaData tem campos diretos, sem .attributes
     val empresa = companies.firstOrNull { it.id == companyId }
 
     if (empresa == null) {
@@ -117,12 +115,10 @@ fun CompanyDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .background(
-                        Brush.linearGradient(listOf(Color(0xFF063E32), PactGreen))
-                    )
+                    .background(Brush.linearGradient(listOf(Color(0xFF063E32), PactGreen)))
             )
 
-            // ── 2. LOGO FLUTUANTE + FAVORITO ─────────────────────────────────
+            // ── 2. LOGO REAL VINDO DO STRAPI ─────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -140,14 +136,21 @@ fun CompanyDetailScreen(
                         modifier = Modifier.size(58.dp)
                     ) {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            // Futuramente: AsyncImage com empresa.logo?.url via Coil
-                            // val logoUrl = STRAPI_BASE + (empresa.logo?.url ?: "")
-                            Text(
-                                text = nome.first().toString(),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PactGreen
-                            )
+                            if (empresa.logoRes?.url != null) {
+                                AsyncImage(
+                                    model = empresa.logoRes.url,
+                                    contentDescription = nome,
+                                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            } else {
+                                Text(
+                                    text = nome.first().toString(),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PactGreen
+                                )
+                            }
                         }
                     }
 
@@ -229,10 +232,7 @@ fun CompanyDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(PactSurfaceAlt),
+                        modifier = Modifier.size(34.dp).clip(RoundedCornerShape(8.dp)).background(PactSurfaceAlt),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Language, null, tint = PactMuted, modifier = Modifier.size(16.dp))
@@ -256,7 +256,9 @@ fun CompanyDetailScreen(
                         .background(PactAccent)
                         .clickable {
                             if (website.isNotBlank()) {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(website)))
+                                try {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(website)))
+                                } catch (e: Exception) { /* Evita crash se o link for inválido */ }
                             }
                         }
                         .padding(vertical = 14.dp),
@@ -280,8 +282,6 @@ fun CompanyDetailScreen(
     }
 }
 
-// ─── Card de galeria do Strapi ───────────────────────────────────────────────
-
 @Composable
 fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
     Box(
@@ -292,17 +292,17 @@ fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
             .background(PactGreenSoft)
             .clickable { onClick() }
     ) {
-        // Futuramente substitui por AsyncImage quando tiveres Coil:
-        // AsyncImage(
-        //     model = STRAPI_BASE + (media.url ?: ""),
-        //     contentDescription = media.name,
-        //     modifier = Modifier.fillMaxSize(),
-        //     contentScale = ContentScale.Crop
-        // )
-
-        // Placeholder
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
+        if (media.url != null) {
+            AsyncImage(
+                model = media.url,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
+            }
         }
 
         Box(
@@ -311,15 +311,8 @@ fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
                 .background(Brush.verticalGradient(
                     listOf(Color.Transparent, Color.Black.copy(0.55f)), startY = 40f))
         )
-        Text(
-            text = media.name ?: "",
-            fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Medium,
-            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
-        )
     }
 }
-
-// ─── Lightbox do Strapi ──────────────────────────────────────────────────────
 
 @Composable
 fun StrapiLightbox(items: List<StrapiMediaData>, initialIndex: Int, onDismiss: () -> Unit) {
@@ -329,13 +322,18 @@ fun StrapiLightbox(items: List<StrapiMediaData>, initialIndex: Int, onDismiss: (
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-            // Placeholder — substitui por AsyncImage com Coil
-            Box(Modifier.fillMaxSize().background(PactGreenSoft), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(64.dp))
+            if (item.url != null) {
+                AsyncImage(
+                    model = item.url,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
             }
 
             Box(Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter)
                 .background(Brush.verticalGradient(listOf(Color.Black.copy(0.75f), Color.Transparent))))
+
             Box(Modifier.fillMaxWidth().height(140.dp).align(Alignment.BottomCenter)
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f)))))
 
@@ -345,6 +343,7 @@ fun StrapiLightbox(items: List<StrapiMediaData>, initialIndex: Int, onDismiss: (
             IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
                 Icon(Icons.Default.Close, "Fechar", tint = Color.White)
             }
+
             if (currentIndex > 0) {
                 IconButton(onClick = { currentIndex-- },
                     modifier = Modifier.align(Alignment.CenterStart).padding(8.dp)
@@ -360,26 +359,20 @@ fun StrapiLightbox(items: List<StrapiMediaData>, initialIndex: Int, onDismiss: (
                 }
             }
 
-            Column(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 36.dp, start = 24.dp, end = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 36.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(item.name ?: "", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items.indices.forEach { i ->
-                        Box(modifier = Modifier
-                            .size(if (i == currentIndex) 8.dp else 5.dp)
-                            .clip(CircleShape)
-                            .background(if (i == currentIndex) Color.White else Color.White.copy(0.3f)))
-                    }
+                items.indices.forEach { i ->
+                    Box(modifier = Modifier
+                        .size(if (i == currentIndex) 8.dp else 5.dp)
+                        .clip(CircleShape)
+                        .background(if (i == currentIndex) Color.White else Color.White.copy(0.3f)))
                 }
             }
         }
     }
 }
-
-// ─── Auxiliares ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun Divider() {
@@ -390,33 +383,4 @@ private fun Divider() {
 private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(text, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
         color = PactMuted, letterSpacing = 0.08.sp, modifier = modifier)
-}
-
-// Mantém compatibilidade com GalleryCard/GalleryLightbox antigos se necessário
-@Composable
-fun GalleryCard(item: CompanyImage, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier.width(160.dp).height(110.dp)
-            .clip(RoundedCornerShape(14.dp)).background(PactGreenSoft).clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
-        Box(Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.55f)), startY = 40f)))
-        Text(item.caption, fontSize = 11.sp, color = Color.White,
-            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp))
-    }
-}
-
-@Composable
-fun GalleryLightbox(items: List<CompanyImage>, initialIndex: Int, onDismiss: () -> Unit) {
-    var currentIndex by remember { mutableStateOf(initialIndex) }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(64.dp))
-            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
-                Icon(Icons.Default.Close, "Fechar", tint = Color.White)
-            }
-        }
-    }
 }
