@@ -95,7 +95,7 @@ fun CompanyDetailScreen(
 
     val nome = empresa.nome ?: "Sem nome"
     val descricao = empresa.descricao ?: ""
-    val category = empresa.category ?: "Sem categoria"
+    val category = empresa.category ?.name?: "Sem categoria"
     val city = empresa.city ?: ""
     val website = empresa.url ?: ""
     val galeria = empresa.Galeria ?: emptyList()

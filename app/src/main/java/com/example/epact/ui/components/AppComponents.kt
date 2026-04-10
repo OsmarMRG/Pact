@@ -316,14 +316,16 @@ fun CompanyCard(company: Company, onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopBar(currentRoute: String?, onBack: () -> Unit) {
+    // Esconder a top bar no ecrã inicial — o Hero já serve de cabeçalho
+    if (currentRoute == "home") return
+
     val title = when {
         currentRoute == null -> "EPACT"
         currentRoute.startsWith("company/") -> "Detalhe"
-        currentRoute == "home" -> "EPACT"
-        currentRoute == "ecosystem" -> "Ecossistema"
+        currentRoute == "welcome"   -> "EPACT"
         currentRoute == "companies" -> "Empresas"
-        currentRoute == "map" -> "Mapa"
-        currentRoute == "media" -> "Media"
+        currentRoute == "map"       -> "Mapa"
+        currentRoute == "media"     -> "Media"
         else -> "EPACT"
     }
 
@@ -336,7 +338,8 @@ fun AppTopBar(currentRoute: String?, onBack: () -> Unit) {
         title = {
             Text(
                 text = title,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
             )
         },
         navigationIcon = {

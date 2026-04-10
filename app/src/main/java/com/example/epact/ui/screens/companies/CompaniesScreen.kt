@@ -24,8 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -73,7 +73,7 @@ import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-
+import coil.compose.AsyncImage
 data class MapBuilding(
     val id: String,
     val label: String,
@@ -166,7 +166,7 @@ private fun ViewToggle(showMap: Boolean, onToggle: (Boolean) -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = if (isMap) Icons.Default.Map else Icons.Default.FormatListBulleted,
+                        imageVector = if (isMap) Icons.Default.Map else Icons.AutoMirrored.Filled.FormatListBulleted,
                         contentDescription = null,
                         tint = if (active) Color.White else PactMuted,
                         modifier = Modifier.size(16.dp)
@@ -192,7 +192,8 @@ private fun ListaView(
         val matchSearch = (e.nome ?: "").contains(search, ignoreCase = true) ||
                 (e.descricao ?: "").contains(search, ignoreCase = true)
         val matchCat = selectedCategory == "Todos" ||
-                e.category?.equals(selectedCategory, ignoreCase = true) == true
+                // ✅ CORRETO
+                e.category?.name?.equals(selectedCategory, ignoreCase = true) == true
         matchSearch && matchCat
     }
 
@@ -233,7 +234,7 @@ private fun ListaView(
 private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
     val nome = empresa.nome ?: "Sem nome"
     val descricao = empresa.descricao ?: ""
-    val category = empresa.category ?: "Sem categoria"
+    val category = empresa.category ?.name?: "Sem categoria"
     val city = empresa.city ?: ""
 
     Row(
@@ -250,7 +251,7 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(nome, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PactText,
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(category, fontSize = 11.sp, color = PactAccent, fontWeight = FontWeight.Medium,
+            Text(text=category, fontSize = 12.sp, color = PactAccent, fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 2.dp))
             if (descricao.isNotBlank()) {
                 Text(descricao, fontSize = 11.sp, color = PactMuted,
@@ -428,7 +429,7 @@ private fun BuildingSheet(
 @Composable
 private fun SheetRow(empresa: EmpresaData, onClick: () -> Unit) {
     val nome = empresa.nome ?: "Sem nome"
-    val category = empresa.category ?: "Sem categoria"
+    val category = empresa.category ?.name?: "Sem categoria"
 
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 20.dp, vertical = 13.dp),

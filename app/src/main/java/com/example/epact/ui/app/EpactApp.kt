@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -17,18 +16,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.epact.data.AppData
 import com.example.epact.model.BottomItem
 import com.example.epact.navigation.AppDestinations
 import com.example.epact.ui.components.AppBottomBar
 import com.example.epact.ui.components.AppTopBar
 import com.example.epact.ui.screens.companies.CompaniesScreen
 import com.example.epact.ui.screens.companies.CompanyDetailScreen
-import com.example.epact.ui.screens.ecosystem.EcosystemScreen
-import com.example.epact.ui.screens.home.HomeScreen
 import com.example.epact.ui.screens.map.MapScreen
 import com.example.epact.ui.screens.media.MediaScreen
+import com.example.epact.ui.screens.home.WelcomeScreen
 import com.example.epact.ui.theme.PactBlack
+import com.example.epact.data.AppData
 
 @Composable
 fun EpactApp() {
@@ -36,11 +34,10 @@ fun EpactApp() {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
     val bottomItems = listOf(
-        BottomItem("Início", AppDestinations.Home),
-        BottomItem("ePact", AppDestinations.Ecosystem),
+        BottomItem("Início",   AppDestinations.Welcome),
         BottomItem("Empresas", AppDestinations.Companies),
-        BottomItem("Mapa", AppDestinations.Map),
-        BottomItem("Media", AppDestinations.Media)
+        BottomItem("Mapa",     AppDestinations.Map),
+        BottomItem("Media",    AppDestinations.Media)
     )
 
     val showBottomBar = currentRoute?.startsWith("company/") != true
@@ -69,11 +66,10 @@ fun EpactApp() {
                     },
                     iconForRoute = { route, label ->
                         when (route) {
-                            AppDestinations.Home -> Icon(Icons.Default.Home, contentDescription = label)
-                            AppDestinations.Ecosystem -> Icon(Icons.Default.Public, contentDescription = label)
-                            AppDestinations.Companies -> Icon(Icons.Default.Business, contentDescription = label)
-                            AppDestinations.Map -> Icon(Icons.Default.LocationOn, contentDescription = label)
-                            else -> Icon(Icons.Default.PhotoLibrary, contentDescription = label)
+                            AppDestinations.Welcome   -> Icon(Icons.Default.Home,         contentDescription = label)
+                            AppDestinations.Companies -> Icon(Icons.Default.Business,     contentDescription = label)
+                            AppDestinations.Map       -> Icon(Icons.Default.LocationOn,   contentDescription = label)
+                            else                      -> Icon(Icons.Default.PhotoLibrary,  contentDescription = label)
                         }
                     }
                 )
@@ -82,18 +78,14 @@ fun EpactApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppDestinations.Home,
+            startDestination = AppDestinations.Welcome,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(AppDestinations.Home) {
-                HomeScreen(
-                    metrics = AppData.metrics,
+            composable(AppDestinations.Welcome) {
+                WelcomeScreen(
                     onCompaniesClick = { navController.navigate(AppDestinations.Companies) },
-                    onMapClick = { navController.navigate(AppDestinations.Map) }
+                    onMapClick       = { navController.navigate(AppDestinations.Map) }
                 )
-            }
-            composable(AppDestinations.Ecosystem) {
-                EcosystemScreen()
             }
             composable(AppDestinations.Companies) {
                 CompaniesScreen(
