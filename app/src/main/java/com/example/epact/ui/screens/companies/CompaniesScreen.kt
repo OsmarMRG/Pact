@@ -68,7 +68,7 @@ import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactGreen
+import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
@@ -85,19 +85,34 @@ data class MapBuilding(
 )
 
 private val mapBuildings = listOf(
-    MapBuilding("A0", "A", "Edifício A · Piso 0", 0.36f, 0.22f,
+    // Edifício A · Piso 1 (bloco topo)
+    MapBuilding("A1", "A", "Edifício A · Piso 1", 0.62f, 0.09f,
+        listOf("NTT DATA", "Solvit", "PropWorx", "DigitalWorks",
+            "IPParking", "SDAC", "Verde100Truques")),
+
+    // Edifício A · Piso 0 (bloco meio-cima)
+    MapBuilding("A0", "A", "Edifício A · Piso 0", 0.35f, 0.28f,
         listOf("Interprev", "foursolutions", "Qstaff")),
-    MapBuilding("A1", "A", "Edifício A · Piso 1", 0.64f, 0.11f,
-        listOf("NTT DATA", "Solvit", "PropWorx", "DigitalWorks", "IPParking", "SDAC", "Verde100Truques")),
-    MapBuilding("B", "B", "Edifício B", 0.16f, 0.60f,
+
+    // Edifício B (lado esquerdo do complexo)
+    MapBuilding("B", "B", "Edifício B", 0.15f, 0.58f,
         listOf("BSO Consulting", "IG&H")),
-    MapBuilding("C1", "C1", "Edifício C1", 0.44f, 0.70f,
-        listOf("Peak&Peak", "Vidigal Silva & Carlos Silva", "N10GLED", "Empowered Startups", "Jerónimo Martins")),
-    MapBuilding("C2", "C2", "Edifício C2", 0.60f, 0.57f,
+
+    // Edifício C1 (frente do complexo)
+    MapBuilding("C1", "C1", "Edifício C1", 0.42f, 0.68f,
+        listOf("Peak&Peak", "Vidigal Silva & Carlos Silva",
+            "N10GLED", "Empowered Startups", "Jerónimo Martins")),
+
+    // Edifício C2 (topo do complexo)
+    MapBuilding("C2", "C2", "Edifício C2", 0.52f, 0.52f,
         listOf("Fraunhofer Portugal", "IPParking")),
-    MapBuilding("D", "D", "Edifício D", 0.75f, 0.63f,
+
+    // Edifício D (direita do complexo)
+    MapBuilding("D", "D", "Edifício D", 0.72f, 0.60f,
         listOf("TE Connectivity")),
-    MapBuilding("E", "E", "Edifício E", 0.44f, 0.87f,
+
+    // Edifício E (bloco triangular fundo)
+    MapBuilding("E", "E", "Edifício E", 0.45f, 0.86f,
         listOf("CEiiA", "KPMG", "Jerónimo Martins"))
 )
 
@@ -129,7 +144,7 @@ fun CompaniesScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(PactGreen)
+                                .background(PactOrange)
                                 .clickable { viewModel.loadCompanies() }
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
                         ) {
@@ -156,8 +171,8 @@ private fun ViewToggle(showMap: Boolean, onToggle: (Boolean) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (active) PactGreen else PactCard)
-                    .border(0.5.dp, if (active) PactGreen else PactBorder, RoundedCornerShape(12.dp))
+                    .background(if (active) PactOrange else PactCard)
+                    .border(0.5.dp, if (active) PactOrange else PactBorder, RoundedCornerShape(12.dp))
                     .clickable { onToggle(isMap) }
                     .padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center
@@ -267,7 +282,7 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
                     text = nome.take(2).uppercase(),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PactGreen
+                    color = PactOrange
                 )
             }
         }
@@ -494,7 +509,7 @@ private fun SheetRow(empresa: EmpresaData, onClick: () -> Unit) {
                     contentScale = ContentScale.Fit
                 )
             } else {
-                Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactGreen)
+                Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactOrange)
             }
         }
         Column(modifier = Modifier.weight(1f)) {

@@ -211,7 +211,7 @@ fun WelcomeScreen(
                 SolutionRow(
                     title = "InPACT",
                     description = "Incubação física com espaço dedicado e acesso a infraestruturas.",
-                    accent = PactGreen
+                    accent = PactOrange
                 )
                 Spacer(Modifier.height(10.dp))
                 SolutionRow(

@@ -62,8 +62,8 @@ import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactGreen
-import com.example.epact.ui.theme.PactGreenSoft
+import com.example.epact.ui.theme.PactOrange
+import com.example.epact.ui.theme.PactBlueSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
@@ -115,7 +115,7 @@ fun CompanyDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(100.dp)
-                    .background(Brush.linearGradient(listOf(Color(0xFF063E32), PactGreen)))
+                    .background(Brush.linearGradient(listOf(Color(0xFF063E32), PactOrange)))
             )
 
             // ── 2. LOGO REAL VINDO DO STRAPI ─────────────────────────────────
@@ -148,7 +148,7 @@ fun CompanyDetailScreen(
                                     text = nome.first().toString(),
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = PactGreen
+                                    color = PactOrange
                                 )
                             }
                         }
@@ -289,7 +289,7 @@ fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
             .width(160.dp)
             .height(110.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(PactGreenSoft)
+            .background(PactBlueSoft)
             .clickable { onClick() }
     ) {
         if (media.url != null) {
@@ -301,7 +301,7 @@ fun StrapiGalleryCard(media: StrapiMediaData, onClick: () -> Unit) {
             )
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Image, null, tint = PactGreen, modifier = Modifier.size(28.dp))
+                Icon(Icons.Default.Image, null, tint = PactOrange, modifier = Modifier.size(28.dp))
             }
         }
 

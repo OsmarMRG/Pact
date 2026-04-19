@@ -7,9 +7,9 @@ import androidx.compose.runtime.Composable
 private val EpactColorScheme = darkColorScheme(
     primary = PactAccent,
     onPrimary = PactBlack,
-    secondary = PactGreen,
+    secondary = PactOrange,
     onSecondary = PactText,
-    tertiary = PactGreenSoft,
+    tertiary = PactBlueSoft,
     background = PactBlack,
     onBackground = PactText,
     surface = PactSurface,

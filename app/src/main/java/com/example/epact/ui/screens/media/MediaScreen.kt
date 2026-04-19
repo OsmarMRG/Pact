@@ -54,7 +54,7 @@ import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactGreen
+import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactGreenSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
@@ -339,7 +339,7 @@ private fun HeroBlock(photo: MediaPhoto, onTap: () -> Unit) {
         Icon(
             imageVector = Icons.Default.Image,
             contentDescription = null,
-            tint = PactGreen.copy(alpha = 0.5f),
+            tint = PactOrange.copy(alpha = 0.5f),
             modifier = Modifier
                 .align(Alignment.Center)
                 .size(48.dp)
@@ -382,7 +382,7 @@ private fun PhotoCell(photo: MediaPhoto, onClick: () -> Unit) {
         Icon(
             imageVector = Icons.Default.Image,
             contentDescription = null,
-            tint = PactGreen.copy(alpha = 0.4f),
+            tint = PactOrange.copy(alpha = 0.4f),
             modifier = Modifier
                 .align(Alignment.Center)
                 .size(24.dp)
@@ -512,7 +512,7 @@ private fun PhotoLightbox(
                 Icon(
                     imageVector = Icons.Default.Image,
                     contentDescription = null,
-                    tint = PactGreen,
+                    tint = PactOrange,
                     modifier = Modifier.size(64.dp)
                 )
             }

@@ -50,7 +50,7 @@ import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactGreen
+import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactGreenSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt

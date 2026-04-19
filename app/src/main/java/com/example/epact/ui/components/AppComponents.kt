@@ -51,7 +51,7 @@ import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactGreen
+import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactGreenSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
@@ -138,7 +138,7 @@ fun HeroCard() {
             .clip(RoundedCornerShape(28.dp))
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(PactGreen, PactBlack)
+                    colors = listOf(PactOrange, PactBlack)
                 )
             )
             .padding(22.dp)
