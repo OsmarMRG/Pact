@@ -24,9 +24,10 @@ import com.example.epact.ui.screens.companies.CompaniesScreen
 import com.example.epact.ui.screens.companies.CompanyDetailScreen
 import com.example.epact.ui.screens.map.MapScreen
 import com.example.epact.ui.screens.media.MediaScreen
-import com.example.epact.ui.screens.home.WelcomeScreen
+
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.data.AppData
+import com.example.epact.ui.screens.welcome.WelcomeScreen
 
 @Composable
 fun EpactApp() {

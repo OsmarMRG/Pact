@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.epact.R
 import com.example.epact.model.EmpresaData
 import com.example.epact.ui.components.CategoryFilters
@@ -73,7 +74,7 @@ import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import coil.compose.AsyncImage
+
 data class MapBuilding(
     val id: String,
     val label: String,
@@ -192,7 +193,6 @@ private fun ListaView(
         val matchSearch = (e.nome ?: "").contains(search, ignoreCase = true) ||
                 (e.descricao ?: "").contains(search, ignoreCase = true)
         val matchCat = selectedCategory == "Todos" ||
-                // ✅ CORRETO
                 e.category?.name?.equals(selectedCategory, ignoreCase = true) == true
         matchSearch && matchCat
     }
@@ -232,32 +232,74 @@ private fun ListaView(
 
 @Composable
 private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
-    val nome = empresa.nome ?: "Sem nome"
+    val nome      = empresa.nome ?: "Sem nome"
     val descricao = empresa.descricao ?: ""
-    val category = empresa.category ?.name?: "Sem categoria"
-    val city = empresa.city ?: ""
+    val category  = empresa.category?.name ?: "Sem categoria"   // ← .name aqui
+    val city      = empresa.city ?: ""
+    val logoUrl   = empresa.logoRes?.url
 
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Box(
-            modifier = Modifier.size(46.dp).clip(RoundedCornerShape(12.dp)).background(Color.White),
+            modifier = Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactGreen)
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(nome, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PactText,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(text=category, fontSize = 12.sp, color = PactAccent, fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp))
-            if (descricao.isNotBlank()) {
-                Text(descricao, fontSize = 11.sp, color = PactMuted,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+            if (!logoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = logoUrl,
+                    contentDescription = nome,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(6.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Text(
+                    text = nome.take(2).uppercase(),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PactGreen
+                )
             }
         }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                nome,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PactText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                category,
+                fontSize = 11.sp,
+                color = PactAccent,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            if (descricao.isNotBlank()) {
+                Text(
+                    descricao,
+                    fontSize = 11.sp,
+                    color = PactMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+
         Column(horizontalAlignment = Alignment.End) {
             if (city.isNotBlank()) {
                 Box(
@@ -428,16 +470,32 @@ private fun BuildingSheet(
 
 @Composable
 private fun SheetRow(empresa: EmpresaData, onClick: () -> Unit) {
-    val nome = empresa.nome ?: "Sem nome"
-    val category = empresa.category ?.name?: "Sem categoria"
+    val nome     = empresa.nome ?: "Sem nome"
+    val category = empresa.category?.name ?: "Sem categoria"   // ← .name aqui também
 
     Row(
         modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 20.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(11.dp)).background(Color.White), contentAlignment = Alignment.Center) {
-            Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactGreen)
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(Color.White),
+            contentAlignment = Alignment.Center
+        ) {
+            val logoUrl = empresa.logoRes?.url
+            if (!logoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = logoUrl,
+                    contentDescription = nome,
+                    modifier = Modifier.fillMaxSize().padding(5.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactGreen)
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(nome, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PactText,

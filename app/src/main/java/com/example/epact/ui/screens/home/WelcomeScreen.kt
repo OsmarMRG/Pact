@@ -1,4 +1,4 @@
-package com.example.epact.ui.screens.home
+package com.example.epact.ui.screens.welcome
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -53,10 +53,15 @@ fun WelcomeScreen(
         scope.launch { contentAlpha.animateTo(1f, tween(600)) }
     }
 
+    val siteBg = Color(0xFF070A10)
+    val siteBg1 = Color(0xFF0B1020)
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PactBlack),
+            .background(
+                Brush.verticalGradient(listOf(siteBg, siteBg1))
+            ),
         contentPadding = PaddingValues(bottom = 48.dp)
     ) {
 
@@ -68,55 +73,7 @@ fun WelcomeScreen(
                     .height(320.dp)
                     .alpha(heroAlpha.value)
             ) {
-                // Fundo: gradiente simulando imagem real (trocar por Image quando disponível)
-                // Para usar imagem real:
-                //   Image(painterResource(R.drawable.pact_hero), contentDescription = null,
-                //         modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Color(0xFF063E32),
-                                    Color(0xFF1E6B57),
-                                    Color(0xFF0B0E11)
-                                )
-                            )
-                        )
-                )
 
-                // Padrão decorativo (pontos/grid — evocam espaço tecnológico)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(0xFFE6822E).copy(alpha = 0.12f),
-                                    Color.Transparent
-                                ),
-                                radius = 600f
-                            )
-                        )
-                )
-
-                // Overlay gradiente para fazer texto legível
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.65f)
-                                ),
-                                startY = 120f
-                            )
-                        )
-                )
-
-                // Badge PACT no topo
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -134,23 +91,6 @@ fun WelcomeScreen(
                     )
                 }
 
-                // Decoração — círculo laranja difuso
-                Box(
-                    modifier = Modifier
-                        .size(180.dp)
-                        .align(Alignment.TopEnd)
-                        .offset(x = 60.dp, y = (-40).dp)
-                        .clip(CircleShape)
-                        .background(PactAccent.copy(alpha = 0.08f))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .align(Alignment.TopEnd)
-                        .offset(x = 20.dp, y = 10.dp)
-                        .clip(CircleShape)
-                        .background(PactAccent.copy(alpha = 0.12f))
-                )
 
                 // Texto principal hero
                 Column(
@@ -166,6 +106,7 @@ fun WelcomeScreen(
                         letterSpacing = 0.06.sp
                     )
                     Spacer(Modifier.height(6.dp))
+
                     Text(
                         text = "Tecnológico\ne Inovador",
                         color = PactText,
@@ -173,16 +114,28 @@ fun WelcomeScreen(
                         fontWeight = FontWeight.Bold,
                         lineHeight = 42.sp
                     )
+
                     Spacer(Modifier.height(10.dp))
+
                     Text(
                         text = "O ecossistema de inovação e tecnologia\nno coração do Alentejo.",
                         color = PactText.copy(alpha = 0.75f),
                         fontSize = 14.sp,
                         lineHeight = 21.sp
                     )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color.White.copy(alpha = 0.08f))
+                    )
                 }
             }
         }
+
 
         // ── MÉTRICAS ──────────────────────────────────────────────────────
         item {
@@ -192,6 +145,14 @@ fun WelcomeScreen(
                     .padding(top = 28.dp, start = 20.dp, end = 20.dp)
             ) {
                 SectionLabel("INDICADORES")
+                Spacer(Modifier.height(8.dp))
+
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Color.White.copy(alpha = 0.08f))
+                )
                 Spacer(Modifier.height(14.dp))
             }
         }
