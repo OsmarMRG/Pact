@@ -55,7 +55,7 @@ import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
 import com.example.epact.ui.theme.PactOrange
-import com.example.epact.ui.theme.PactGreenSoft
+import com.example.epact.ui.theme.PactBlueSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
@@ -302,7 +302,7 @@ private fun HeroBlock(photo: MediaPhoto, onTap: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PactGreenSoft)
+                .background(PactBlueSoft)
         )
 
         // Overlay gradiente
@@ -375,7 +375,7 @@ private fun PhotoCell(photo: MediaPhoto, onClick: () -> Unit) {
         modifier = Modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(8.dp))
-            .background(PactGreenSoft)
+            .background(PactBlueSoft)
             .clickable { onClick() }
     ) {
         // Placeholder — substitui por Image() quando tiveres a foto real
@@ -430,7 +430,7 @@ private fun VideoRow(video: MediaVideo, onTap: () -> Unit) {
             modifier = Modifier
                 .size(width = 72.dp, height = 52.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(PactGreenSoft),
+                .background(PactBlueSoft),
             contentAlignment = Alignment.Center
         ) {
             // Placeholder — substitui por Image() quando tiveres thumbnail real
@@ -506,7 +506,7 @@ private fun PhotoLightbox(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(PactGreenSoft),
+                    .background(PactBlueSoft),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

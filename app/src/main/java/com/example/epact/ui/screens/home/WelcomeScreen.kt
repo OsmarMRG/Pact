@@ -317,7 +317,7 @@ private fun WelcomeMetricCard(metric: Metric) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(PactGreenSoft),
+                    .background(PactBlueSoft),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

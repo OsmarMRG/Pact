@@ -51,7 +51,7 @@ import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
 import com.example.epact.ui.theme.PactCard
 import com.example.epact.ui.theme.PactOrange
-import com.example.epact.ui.theme.PactGreenSoft
+import com.example.epact.ui.theme.PactBlueSoft
 import com.example.epact.ui.theme.PactMuted
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
@@ -133,7 +133,7 @@ fun MapScreen() {
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(PactGreenSoft),
+                        .background(PactBlueSoft),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
