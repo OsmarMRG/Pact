@@ -210,7 +210,8 @@ fun MediaScreen(
                             VideoRow(
                                 item = videoItem,
                                 onTap = {
-                                    val url = videoItem.video
+                                    // Agora o videoItem.video é um objeto, então vamos buscar o URL!
+                                    val url = videoItem.video?.firstOrNull()?.url
                                     if (!url.isNullOrBlank()) {
                                         videoUrlToPlay = url // Abre o vídeo na app!
                                     }
@@ -240,7 +241,7 @@ fun MediaScreen(
             )
         }
 
-        // ── OVERLAY DE VÍDEOS (SOLUÇÃO DEFINITIVA SEM DIALOG) ────────────
+        // ── OVERLAY DE VÍDEOS (PLAYER NATIVO MP4) ────────────
         videoUrlToPlay?.let { url ->
             VideoPlayerOverlay(
                 url = url,
@@ -614,50 +615,43 @@ private fun SectionLabel(text: String) {
     )
 }
 
-// ─── Player Interno Definitivo (SEM DIALOG) ────────────────────────────────
+// ─── Player Interno para Vídeos Nativos (.mp4 do Strapi) ───────────────────
 
 @Composable
 fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
-    // Interceta o botão "Voltar" do telemóvel para fechar o vídeo
-    BackHandler(onBack = onDismiss)
+    androidx.activity.compose.BackHandler(onBack = onDismiss)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            // Impede cliques fantasmas na lista que ficou por trás do fundo preto
-            .clickable(onClick = {}),
+            .clickable(onClick = {}), // Impede cliques na lista por trás
         contentAlignment = Alignment.Center
     ) {
-        val videoId = getYouTubeId(url)
+        // Garante que o URL está completo (útil se o Strapi devolver apenas "/uploads/...")
+        val baseUrl = "https://meaningful-desire-049927a41b.strapiapp.com"
+        val finalUrl = if (url.startsWith("http")) url else "$baseUrl$url"
 
-        if (videoId != null) {
-            androidx.compose.ui.viewinterop.AndroidView(
-                factory = { ctx ->
-                    android.webkit.WebView(ctx).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = { ctx ->
+                android.widget.VideoView(ctx).apply {
+                    setVideoURI(android.net.Uri.parse(finalUrl))
 
-                        webChromeClient = android.webkit.WebChromeClient()
-                        webViewClient = android.webkit.WebViewClient()
-                        setBackgroundColor(android.graphics.Color.BLACK)
+                    // Adiciona a barra de progresso, botão play/pause nativos do Android
+                    val mediaController = android.widget.MediaController(ctx)
+                    mediaController.setAnchorView(this)
+                    setMediaController(mediaController)
 
-                        // Carrega o YouTube sem autoplay forçado
-                        loadUrl("https://www.youtube.com/embed/$videoId")
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-            )
-        } else {
-            Text(
-                text = "Link de vídeo inválido",
-                color = Color.White
-            )
-        }
+                    // Começa a reproduzir automaticamente
+                    start()
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+        )
 
-        // Botão de Fechar no canto superior direito
+        // Botão de Fechar
         IconButton(
             onClick = onDismiss,
             modifier = Modifier
@@ -666,15 +660,5 @@ fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
         ) {
             Icon(Icons.Default.Close, "Fechar", tint = Color.White, modifier = Modifier.size(32.dp))
         }
-    }
-}
-
-private fun getYouTubeId(url: String): String? {
-    return when {
-        url.contains("v=") -> url.substringAfter("v=").substringBefore("&")
-        url.contains("youtu.be/") -> url.substringAfter("youtu.be/").substringBefore("?")
-        url.contains("shorts/") -> url.substringAfter("shorts/").substringBefore("?")
-        url.contains("live/") -> url.substringAfter("live/").substringBefore("?")
-        else -> null
     }
 }
