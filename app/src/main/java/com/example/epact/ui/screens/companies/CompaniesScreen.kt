@@ -20,27 +20,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,67 +60,109 @@ import com.example.epact.ui.components.CategoryFilters
 import com.example.epact.ui.theme.PactAccent
 import com.example.epact.ui.theme.PactBlack
 import com.example.epact.ui.theme.PactBorder
+import com.example.epact.ui.theme.PactBlueSoft
 import com.example.epact.ui.theme.PactCard
-import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactMuted
+import com.example.epact.ui.theme.PactOrange
 import com.example.epact.ui.theme.PactSurfaceAlt
 import com.example.epact.ui.theme.PactText
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-data class MapBuilding(
-    val id: String,
-    val label: String,
-    val subtitle: String,
-    val pinX: Float,
-    val pinY: Float,
-    val companyNames: List<String>
+// ─── Zonas clicáveis calibradas para MapaPactNovo.png ────────────────────
+//
+// Imagem portrait ~900×1350px. Edifício principal (A) dividido em:
+//   Piso 1 → bloco horizontal TOPO   (aprox. 3%–18% da altura)
+//   Piso 0 → bloco horizontal ABAIXO (aprox. 18%–40% da altura)
+//
+// Os restantes edifícios ocupam a zona 40%–100%.
+
+data class EdificioZone(
+    val codigo: String,   // deve coincidir com EmpresaData.edificio e EdificioData.codigo
+    val label: String,    // texto do chip visível na imagem
+    val labelX: Float,    // posição X do chip (0..1)
+    val labelY: Float,    // posição Y do chip (0..1)
+    val zoneLeft: Float,
+    val zoneTop: Float,
+    val zoneWidth: Float,
+    val zoneHeight: Float
 )
 
-private val mapBuildings = listOf(
-    // Edifício A · Piso 1 (bloco topo)
-    MapBuilding("A1", "A", "Edifício A · Piso 1", 0.62f, 0.09f,
-        listOf("NTT DATA", "Solvit", "PropWorx", "DigitalWorks",
-            "IPParking", "SDAC", "Verde100Truques")),
+private val edificioZones = listOf(
 
-    // Edifício A · Piso 0 (bloco meio-cima)
-    MapBuilding("A0", "A", "Edifício A · Piso 0", 0.35f, 0.28f,
-        listOf("Interprev", "foursolutions", "Qstaff")),
+    // ── Piso 1 — bloco horizontal topo ───────────────────────────────
+    EdificioZone(
+        codigo = "1", label = "Piso 1",
+        labelX = 0.50f, labelY = 0.06f,
+        zoneLeft = 0.08f, zoneTop = 0.03f,
+        zoneWidth = 0.84f, zoneHeight = 0.14f
+    ),
 
-    // Edifício B (lado esquerdo do complexo)
-    MapBuilding("B", "B", "Edifício B", 0.15f, 0.58f,
-        listOf("BSO Consulting", "IG&H")),
+    // ── Piso 0 — bloco horizontal imediatamente abaixo ───────────────
+    EdificioZone(
+        codigo = "0", label = "Piso 0",
+        labelX = 0.50f, labelY = 0.24f,
+        zoneLeft = 0.08f, zoneTop = 0.17f,
+        zoneWidth = 0.84f, zoneHeight = 0.20f
+    ),
 
-    // Edifício C1 (frente do complexo)
-    MapBuilding("C1", "C1", "Edifício C1", 0.42f, 0.68f,
-        listOf("Peak&Peak", "Vidigal Silva & Carlos Silva",
-            "N10GLED", "Empowered Startups", "Jerónimo Martins")),
+    // ── C2 — barra fina horizontal, logo abaixo do edifício A ────────
+    EdificioZone(
+        codigo = "C2", label = "C2",
+        labelX = 0.62f, labelY = 0.445f,
+        zoneLeft = 0.28f, zoneTop = 0.42f,
+        zoneWidth = 0.60f, zoneHeight = 0.06f
+    ),
 
-    // Edifício C2 (topo do complexo)
-    MapBuilding("C2", "C2", "Edifício C2", 0.52f, 0.52f,
-        listOf("Fraunhofer Portugal", "IPParking")),
+    // ── B — bloco esquerdo, zona média ───────────────────────────────
+    EdificioZone(
+        codigo = "B", label = "B",
+        labelX = 0.16f, labelY = 0.57f,
+        zoneLeft = 0.06f, zoneTop = 0.50f,
+        zoneWidth = 0.26f, zoneHeight = 0.12f
+    ),
 
-    // Edifício D (direita do complexo)
-    MapBuilding("D", "D", "Edifício D", 0.72f, 0.60f,
-        listOf("TE Connectivity")),
+    // ── D — bloco direita com forma hexagonal ────────────────────────
+    EdificioZone(
+        codigo = "D", label = "D",
+        labelX = 0.63f, labelY = 0.555f,
+        zoneLeft = 0.46f, zoneTop = 0.50f,
+        zoneWidth = 0.30f, zoneHeight = 0.10f
+    ),
 
-    // Edifício E (bloco triangular fundo)
-    MapBuilding("E", "E", "Edifício E", 0.45f, 0.86f,
-        listOf("CEiiA", "KPMG", "Jerónimo Martins"))
+    // ── C1 — barra fina horizontal, abaixo de B e D ──────────────────
+    EdificioZone(
+        codigo = "C1", label = "C1",
+        labelX = 0.65f, labelY = 0.635f,
+        zoneLeft = 0.20f, zoneTop = 0.61f,
+        zoneWidth = 0.68f, zoneHeight = 0.06f
+    ),
+
+    // ── E — triângulo grande no fundo ────────────────────────────────
+    EdificioZone(
+        codigo = "E", label = "E",
+        labelX = 0.50f, labelY = 0.88f,
+        zoneLeft = 0.08f, zoneTop = 0.73f,
+        zoneWidth = 0.84f, zoneHeight = 0.24f
+    )
 )
+
+// ─── CompaniesScreen ──────────────────────────────────────────────────────
 
 @Composable
 fun CompaniesScreen(
-    viewModel: CompanyViewModel = viewModel(),
+    companyViewModel: CompanyViewModel = viewModel(),
     categories: List<String>,
-    onCompanyClick: (Int) -> Unit
+    onCompanyClick: (Int) -> Unit,
+    onEdificioClick: (String) -> Unit
 ) {
-    val companies by viewModel.companies
-    val isLoading by viewModel.isLoading
-    val errorMessage by viewModel.errorMessage
+    val companies    by companyViewModel.companies
+    val isLoading    by companyViewModel.isLoading
+    val errorMessage by companyViewModel.errorMessage
+
     var showMap by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().background(PactBlack)) {
+
         ViewToggle(showMap = showMap, onToggle = { showMap = it })
 
         when {
@@ -145,7 +180,7 @@ fun CompaniesScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(PactOrange)
-                                .clickable { viewModel.loadCompanies() }
+                                .clickable { companyViewModel.loadCompanies() }
                                 .padding(horizontal = 20.dp, vertical = 10.dp)
                         ) {
                             Text("Tentar novamente", color = Color.White, fontSize = 13.sp)
@@ -153,16 +188,24 @@ fun CompaniesScreen(
                     }
                 }
             }
-            showMap -> MapaView(allCompanies = companies, onCompanyClick = onCompanyClick)
-            else -> ListaView(companies = companies, categories = categories, onCompanyClick = onCompanyClick)
+            showMap -> MapaView(onEdificioClick = onEdificioClick)
+            else    -> ListaView(
+                companies = companies,
+                categories = categories,
+                onCompanyClick = onCompanyClick
+            )
         }
     }
 }
 
+// ─── Toggle Lista / Mapa ──────────────────────────────────────────────────
+
 @Composable
 private fun ViewToggle(showMap: Boolean, onToggle: (Boolean) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         listOf(false to "Lista", true to "Mapa").forEach { (isMap, label) ->
@@ -182,18 +225,125 @@ private fun ViewToggle(showMap: Boolean, onToggle: (Boolean) -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = if (isMap) Icons.Default.Map else Icons.AutoMirrored.Filled.FormatListBulleted,
+                        imageVector = if (isMap) Icons.Default.Map
+                        else Icons.AutoMirrored.Filled.FormatListBulleted,
                         contentDescription = null,
                         tint = if (active) Color.White else PactMuted,
                         modifier = Modifier.size(16.dp)
                     )
-                    Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                        color = if (active) Color.White else PactMuted)
+                    Text(
+                        label, fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (active) Color.White else PactMuted
+                    )
                 }
             }
         }
     }
 }
+
+// ─── Vista de Mapa ────────────────────────────────────────────────────────
+
+@Composable
+private fun MapaView(onEdificioClick: (String) -> Unit) {
+    var scale     by remember { mutableStateOf(1f) }
+    var offset    by remember { mutableStateOf(Offset.Zero) }
+    var imageSize by remember { mutableStateOf(IntSize.Zero) }
+
+    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        val maxX = (imageSize.width  * (scale - 1f)) / 2f
+        val maxY = (imageSize.height * (scale - 1f)) / 2f
+        offset = Offset(
+            (offset.x + panChange.x).coerceIn(-maxX, maxX),
+            (offset.y + panChange.y).coerceIn(-maxY, maxY)
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(PactBlueSoft)) {
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .transformable(state = transformState)
+                .graphicsLayer(
+                    scaleX = scale, scaleY = scale,
+                    translationX = offset.x, translationY = offset.y
+                )
+                .onSizeChanged { imageSize = it }
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.mapa_pact_novo),
+                contentDescription = "Mapa PACT",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+
+            if (imageSize.width > 0 && imageSize.height > 0) {
+                edificioZones.forEach { zone ->
+
+                    // Área clicável invisível
+                    Box(
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    x = (zone.zoneLeft * imageSize.width).roundToInt(),
+                                    y = (zone.zoneTop  * imageSize.height).roundToInt()
+                                )
+                            }
+                            .size(
+                                width  = (zone.zoneWidth  * imageSize.width).dp,
+                                height = (zone.zoneHeight * imageSize.height).dp
+                            )
+                            .clickable { onEdificioClick(zone.codigo) }
+                    )
+
+                    // Chip com label
+                    Box(
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    x = (zone.labelX * imageSize.width).roundToInt() - 24,
+                                    y = (zone.labelY * imageSize.height).roundToInt() - 14
+                                )
+                            }
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(PactAccent.copy(alpha = 0.92f))
+                            .border(1.dp, Color.White.copy(0.25f), RoundedCornerShape(8.dp))
+                            .clickable { onEdificioClick(zone.codigo) }
+                            .padding(horizontal = 9.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            zone.label,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        // Dica
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 14.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(PactCard.copy(alpha = 0.93f))
+                .border(0.5.dp, PactBorder, RoundedCornerShape(20.dp))
+                .padding(horizontal = 14.dp, vertical = 7.dp)
+        ) {
+            Text(
+                "Pinça para zoom · Toca num edifício",
+                fontSize = 11.sp,
+                color = PactMuted
+            )
+        }
+    }
+}
+
+// ─── Vista de Lista ───────────────────────────────────────────────────────
 
 @Composable
 private fun ListaView(
@@ -201,7 +351,7 @@ private fun ListaView(
     categories: List<String>,
     onCompanyClick: (Int) -> Unit
 ) {
-    var search by rememberSaveable { mutableStateOf("") }
+    var search           by rememberSaveable { mutableStateOf("") }
     var selectedCategory by rememberSaveable { mutableStateOf("Todos") }
 
     val filtered = companies.filter { e ->
@@ -230,12 +380,19 @@ private fun ListaView(
             Spacer(Modifier.height(10.dp))
         }
         item {
-            CategoryFilters(categories = categories, selectedCategory = selectedCategory, onSelect = { selectedCategory = it })
+            CategoryFilters(
+                categories = categories,
+                selectedCategory = selectedCategory,
+                onSelect = { selectedCategory = it }
+            )
             Spacer(Modifier.height(6.dp))
         }
         item {
-            Text("${filtered.size} empresa${if (filtered.size != 1) "s" else ""}",
-                fontSize = 11.sp, color = PactMuted, modifier = Modifier.padding(vertical = 6.dp))
+            Text(
+                "${filtered.size} empresa${if (filtered.size != 1) "s" else ""}",
+                fontSize = 11.sp, color = PactMuted,
+                modifier = Modifier.padding(vertical = 6.dp)
+            )
         }
         items(filtered) { empresa ->
             DirectoryRow(empresa = empresa, onClick = { onCompanyClick(empresa.id) })
@@ -245,11 +402,13 @@ private fun ListaView(
     }
 }
 
+// ─── Linha de empresa ─────────────────────────────────────────────────────
+
 @Composable
 private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
     val nome      = empresa.nome ?: "Sem nome"
     val descricao = empresa.descricao ?: ""
-    val category  = empresa.category?.name ?: "Sem categoria"   // ← .name aqui
+    val category  = empresa.category?.name ?: "Sem categoria"
     val city      = empresa.city ?: ""
     val logoUrl   = empresa.logoRes?.url
 
@@ -272,14 +431,12 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
                 AsyncImage(
                     model = logoUrl,
                     contentDescription = nome,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(6.dp),
+                    modifier = Modifier.fillMaxSize().padding(6.dp),
                     contentScale = ContentScale.Fit
                 )
             } else {
                 Text(
-                    text = nome.take(2).uppercase(),
+                    nome.take(2).uppercase(),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = PactOrange
@@ -288,30 +445,15 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                nome,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = PactText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                category,
-                fontSize = 11.sp,
-                color = PactAccent,
+            Text(nome, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                color = PactText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(category, fontSize = 11.sp, color = PactAccent,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+                modifier = Modifier.padding(top = 2.dp))
             if (descricao.isNotBlank()) {
-                Text(
-                    descricao,
-                    fontSize = 11.sp,
-                    color = PactMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                Text(descricao, fontSize = 11.sp, color = PactMuted,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp))
             }
         }
 
@@ -328,196 +470,5 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
             }
             Text("›", fontSize = 20.sp, color = PactBorder)
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MapaView(allCompanies: List<EmpresaData>, onCompanyClick: (Int) -> Unit) {
-    val scope = rememberCoroutineScope()
-    var selectedBuilding by remember { mutableStateOf<MapBuilding?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
-    var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-    var imageSize by remember { mutableStateOf(IntSize.Zero) }
-
-    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
-        scale = (scale * zoomChange).coerceIn(1f, 5f)
-        val maxX = (imageSize.width * (scale - 1f)) / 2f
-        val maxY = (imageSize.height * (scale - 1f)) / 2f
-        offset = Offset(
-            (offset.x + panChange.x).coerceIn(-maxX, maxX),
-            (offset.y + panChange.y).coerceIn(-maxY, maxY)
-        )
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .transformable(state = transformState)
-                .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)
-                .onSizeChanged { imageSize = it }
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.mapa_pact),
-                contentDescription = "Mapa PACT",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
-            if (imageSize.width > 0 && imageSize.height > 0) {
-                mapBuildings.forEach { building ->
-                    val pinX = (building.pinX * imageSize.width).roundToInt()
-                    val pinY = (building.pinY * imageSize.height).roundToInt()
-                    val count = building.companyNames.size
-                    BuildingPin(building, count, pinX, pinY) {
-                        selectedBuilding = building
-                        scope.launch { sheetState.show() }
-                    }
-                }
-            }
-        }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 12.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(PactCard.copy(alpha = 0.92f))
-                .border(0.5.dp, PactBorder, RoundedCornerShape(20.dp))
-                .padding(horizontal = 14.dp, vertical = 7.dp)
-        ) {
-            Text("Pinça para zoom · Toca num edifício", fontSize = 11.sp, color = PactMuted)
-        }
-    }
-
-    selectedBuilding?.let { building ->
-        val buildingCompanies = building.companyNames.mapNotNull { name ->
-            allCompanies.firstOrNull { e ->
-                (e.nome ?: "").contains(name, ignoreCase = true) ||
-                        name.contains(e.nome ?: "", ignoreCase = true)
-            }
-        }.distinctBy { it.id }
-
-        ModalBottomSheet(
-            onDismissRequest = { selectedBuilding = null },
-            sheetState = sheetState,
-            containerColor = PactCard,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-        ) {
-            BuildingSheet(
-                building = building,
-                companies = buildingCompanies,
-                onCompanyClick = { id ->
-                    scope.launch { sheetState.hide() }
-                    selectedBuilding = null
-                    onCompanyClick(id)
-                },
-                onDismiss = {
-                    scope.launch { sheetState.hide() }
-                    selectedBuilding = null
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun BuildingPin(building: MapBuilding, count: Int, pinX: Int, pinY: Int, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier.offset { IntOffset(pinX - 24, pinY - 48) },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50.dp))
-                .background(PactAccent)
-                .border(2.dp, Color.White, RoundedCornerShape(50.dp))
-                .clickable { onClick() }
-                .padding(horizontal = 10.dp, vertical = 6.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(building.label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Box(Modifier.size(17.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-                    Text("$count", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = PactAccent)
-                }
-            }
-        }
-        Box(Modifier.size(width = 8.dp, height = 5.dp).background(PactAccent))
-    }
-}
-
-@Composable
-private fun BuildingSheet(
-    building: MapBuilding,
-    companies: List<EmpresaData>,
-    onCompanyClick: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(building.subtitle, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = PactText)
-                Text("${companies.size} empresa${if (companies.size != 1) "s" else ""}",
-                    fontSize = 12.sp, color = PactMuted, modifier = Modifier.padding(top = 2.dp))
-            }
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Fechar", tint = PactMuted)
-            }
-        }
-        Box(Modifier.fillMaxWidth().height(0.5.dp).background(PactBorder))
-
-        if (companies.isEmpty()) {
-            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("Empresas a ser adicionadas brevemente", fontSize = 13.sp, color = PactMuted)
-            }
-        } else {
-            companies.forEach { empresa ->
-                SheetRow(empresa = empresa, onClick = { onCompanyClick(empresa.id) })
-                Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(0.5.dp).background(PactBorder))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SheetRow(empresa: EmpresaData, onClick: () -> Unit) {
-    val nome     = empresa.nome ?: "Sem nome"
-    val category = empresa.category?.name ?: "Sem categoria"   // ← .name aqui também
-
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 20.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(11.dp))
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            val logoUrl = empresa.logoRes?.url
-            if (!logoUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = logoUrl,
-                    contentDescription = nome,
-                    modifier = Modifier.fillMaxSize().padding(5.dp),
-                    contentScale = ContentScale.Fit
-                )
-            } else {
-                Text(nome.take(2).uppercase(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PactOrange)
-            }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(nome, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PactText,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(category, fontSize = 12.sp, color = PactAccent, fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 2.dp))
-        }
-        Text("›", fontSize = 22.sp, color = PactMuted)
     }
 }

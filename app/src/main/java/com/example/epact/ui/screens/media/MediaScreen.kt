@@ -131,7 +131,16 @@ fun MediaScreen(
                         item {
                             HeroBlock(
                                 item = heroItem,
-                                onTap = { lightboxIndex = 0 }
+                                onTap = {
+                                    // Vai buscar o URL ao ficheiro que fizeste upload OU ao texto!
+                                    val url = heroItem.imagem?.url ?: heroItem.video
+
+                                    if (heroItem.tipo == "video" && !url.isNullOrBlank()) {
+                                        videoUrlToPlay = url // Abre o leitor de vídeo
+                                    } else {
+                                        lightboxIndex = 0 // Abre a galeria de imagens
+                                    }
+                                }
                             )
                         }
                     }
@@ -211,7 +220,7 @@ fun MediaScreen(
                                 item = videoItem,
                                 onTap = {
                                     // Agora o videoItem.video é um objeto, então vamos buscar o URL!
-                                    val url = videoItem.video?.firstOrNull()?.url
+                                    val url = videoItem.video
                                     if (!url.isNullOrBlank()) {
                                         videoUrlToPlay = url // Abre o vídeo na app!
                                     }
@@ -617,6 +626,12 @@ private fun SectionLabel(text: String) {
 
 // ─── Player Interno para Vídeos Nativos (.mp4 do Strapi) ───────────────────
 
+// ─── Player Interno Definitivo para YOUTUBE (SEM DIALOG) ───────────────────
+
+// ─── Player Interno Definitivo para YOUTUBE (Biblioteca Oficial) ───────────────────
+
+// ─── Player Nativo do Android (Para vídeos do Strapi) ───────────────────
+
 @Composable
 fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
     androidx.activity.compose.BackHandler(onBack = onDismiss)
@@ -625,25 +640,34 @@ fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickable(onClick = {}), // Impede cliques na lista por trás
+            .clickable(onClick = {}),
         contentAlignment = Alignment.Center
     ) {
-        // Garante que o URL está completo (útil se o Strapi devolver apenas "/uploads/...")
+        // 1. Constrói o URL completo (o Strapi às vezes envia apenas a diretoria "/uploads/...")
         val baseUrl = "https://meaningful-desire-049927a41b.strapiapp.com"
         val finalUrl = if (url.startsWith("http")) url else "$baseUrl$url"
 
+        // 2. O Leitor de Vídeo Nativo
         androidx.compose.ui.viewinterop.AndroidView(
             factory = { ctx ->
                 android.widget.VideoView(ctx).apply {
+                    // Diz ao leitor onde está o ficheiro
                     setVideoURI(android.net.Uri.parse(finalUrl))
 
-                    // Adiciona a barra de progresso, botão play/pause nativos do Android
+                    // Adiciona a barra de controlo (Play, Pause, Barra de Progresso)
                     val mediaController = android.widget.MediaController(ctx)
                     mediaController.setAnchorView(this)
                     setMediaController(mediaController)
 
-                    // Começa a reproduzir automaticamente
-                    start()
+                    // Quando o vídeo estiver carregado da net, arranca!
+                    setOnPreparedListener { mp ->
+                        mp.start()
+                    }
+
+                    // (Opcional) Tocar em loop quando chegar ao fim
+                    setOnCompletionListener { mp ->
+                        mp.start()
+                    }
                 }
             },
             modifier = Modifier
@@ -651,14 +675,19 @@ fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
                 .aspectRatio(16f / 9f)
         )
 
-        // Botão de Fechar
-        IconButton(
+        // Botão Fechar no canto superior direito
+        androidx.compose.material3.IconButton(
             onClick = onDismiss,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 40.dp, end = 16.dp)
         ) {
-            Icon(Icons.Default.Close, "Fechar", tint = Color.White, modifier = Modifier.size(32.dp))
+            androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Default.Close,
+                contentDescription = "Fechar",
+                tint = Color.White,
+                modifier = Modifier.size(32.dp)
+            )
         }
     }
 }

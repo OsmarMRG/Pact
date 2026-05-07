@@ -16,23 +16,23 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.epact.data.AppData
 import com.example.epact.model.BottomItem
 import com.example.epact.navigation.AppDestinations
 import com.example.epact.ui.components.AppBottomBar
 import com.example.epact.ui.components.AppTopBar
 import com.example.epact.ui.screens.companies.CompaniesScreen
 import com.example.epact.ui.screens.companies.CompanyDetailScreen
+import com.example.epact.ui.screens.companies.EdificioDetailScreen
 import com.example.epact.ui.screens.map.MapScreen
 import com.example.epact.ui.screens.media.MediaScreen
-
-import com.example.epact.ui.theme.PactBlack
-import com.example.epact.data.AppData
 import com.example.epact.ui.screens.welcome.WelcomeScreen
+import com.example.epact.ui.theme.PactBlack
 
 @Composable
 fun EpactApp() {
     val navController = rememberNavController()
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val currentRoute  = navController.currentBackStackEntryAsState().value?.destination?.route
 
     val bottomItems = listOf(
         BottomItem("Início",   AppDestinations.Welcome),
@@ -41,7 +41,9 @@ fun EpactApp() {
         BottomItem("Media",    AppDestinations.Media)
     )
 
-    val showBottomBar = currentRoute?.startsWith("company/") != true
+    // Esconde a bottom bar nos ecrãs de detalhe
+    val showBottomBar = currentRoute?.startsWith("company/") != true &&
+            currentRoute?.startsWith("edificio/") != true
 
     Scaffold(
         modifier = Modifier.background(PactBlack),
@@ -70,7 +72,7 @@ fun EpactApp() {
                             AppDestinations.Welcome   -> Icon(Icons.Default.Home,         contentDescription = label)
                             AppDestinations.Companies -> Icon(Icons.Default.Business,     contentDescription = label)
                             AppDestinations.Map       -> Icon(Icons.Default.LocationOn,   contentDescription = label)
-                            else                      -> Icon(Icons.Default.PhotoLibrary,  contentDescription = label)
+                            else                      -> Icon(Icons.Default.PhotoLibrary, contentDescription = label)
                         }
                     }
                 )
@@ -88,23 +90,41 @@ fun EpactApp() {
                     onMapClick       = { navController.navigate(AppDestinations.Map) }
                 )
             }
+
             composable(AppDestinations.Companies) {
                 CompaniesScreen(
                     categories = AppData.categories,
                     onCompanyClick = { companyId ->
                         navController.navigate(AppDestinations.companyDetail(companyId))
+                    },
+                    onEdificioClick = { codigo ->
+                        navController.navigate(AppDestinations.edificioDetail(codigo))
                     }
                 )
             }
+
             composable(AppDestinations.CompanyDetail) { backStackEntry ->
                 val companyId = backStackEntry.arguments?.getString("companyId")?.toIntOrNull()
                 if (companyId != null) {
                     CompanyDetailScreen(companyId = companyId)
                 }
             }
+
+            // Ecrã do edifício — hero + lista de empresas
+            composable(AppDestinations.EdificioDetail) { backStackEntry ->
+                val codigo = backStackEntry.arguments?.getString("codigoEdificio") ?: ""
+                EdificioDetailScreen(
+                    codigoEdificio = codigo,
+                    onCompanyClick = { companyId ->
+                        navController.navigate(AppDestinations.companyDetail(companyId))
+                    }
+                )
+            }
+
             composable(AppDestinations.Map) {
                 MapScreen()
             }
+
             composable(AppDestinations.Media) {
                 MediaScreen()
             }

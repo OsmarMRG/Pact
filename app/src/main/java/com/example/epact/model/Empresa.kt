@@ -16,6 +16,7 @@ data class EmpresaData(
     val url: String?,
     val ativo: Boolean?,
     val city: String?,
+    val edificio: String? =null,
     val category: CategoryData? = null,
     @SerializedName("logoRes")
     val logoRes: StrapiMediaData? = null,

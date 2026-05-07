@@ -11,7 +11,7 @@ data class MediaPactData(
     val titulo: String?,
     val legenda: String?,
     val tipo: String?,        // "foto" ou "video"
-    val video: List<StrapiMediaData>?,
+    val video: String?,
     val destaque: Boolean?,
     val ordem: Int?,
     val imagem: StrapiMediaData? = null  // reutiliza a classe já existente
