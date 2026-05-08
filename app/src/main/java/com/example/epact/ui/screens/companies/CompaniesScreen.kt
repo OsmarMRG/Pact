@@ -4,8 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
@@ -78,7 +81,6 @@ import kotlin.math.roundToInt
 
 data class EdificioZone(
     val codigo: String,   // deve coincidir com EmpresaData.edificio e EdificioData.codigo
-    val label: String,    // texto do chip visível na imagem
     val labelX: Float,    // posição X do chip (0..1)
     val labelY: Float,    // posição Y do chip (0..1)
     val zoneLeft: Float,
@@ -88,61 +90,60 @@ data class EdificioZone(
 )
 
 private val edificioZones = listOf(
-
-    // ── Piso 1 — bloco horizontal topo ───────────────────────────────
+    // ── Piso 1 — Bloco superior ───────────────────────────────
     EdificioZone(
-        codigo = "1", label = "Piso 1",
-        labelX = 0.50f, labelY = 0.06f,
-        zoneLeft = 0.08f, zoneTop = 0.03f,
-        zoneWidth = 0.84f, zoneHeight = 0.14f
+        codigo = "1",
+        labelX = 0.50f, labelY = 0.16f,
+        zoneLeft = 0.15f, zoneTop = 0.10f, // Subiu para apanhar o prédio de cima
+        zoneWidth = 0.75f, zoneHeight = 0.12f
     ),
 
-    // ── Piso 0 — bloco horizontal imediatamente abaixo ───────────────
+    // ── Piso 0 — Bloco imediatamente abaixo ───────────────────
     EdificioZone(
-        codigo = "0", label = "Piso 0",
-        labelX = 0.50f, labelY = 0.24f,
-        zoneLeft = 0.08f, zoneTop = 0.17f,
-        zoneWidth = 0.84f, zoneHeight = 0.20f
+        codigo = "0",
+        labelX = 0.50f, labelY = 0.33f,
+        zoneLeft = 0.10f, zoneTop = 0.26f, // Subiu para apanhar o prédio do meio
+        zoneWidth = 0.80f, zoneHeight = 0.14f
     ),
 
-    // ── C2 — barra fina horizontal, logo abaixo do edifício A ────────
+    // ── C2 — Barra horizontal superior ────────────────────────
     EdificioZone(
-        codigo = "C2", label = "C2",
-        labelX = 0.62f, labelY = 0.445f,
-        zoneLeft = 0.28f, zoneTop = 0.42f,
-        zoneWidth = 0.60f, zoneHeight = 0.06f
+        codigo = "C2",
+        labelX = 0.55f, labelY = 0.50f,
+        zoneLeft = 0.20f, zoneTop = 0.48f,
+        zoneWidth = 0.60f, zoneHeight = 0.04f
     ),
 
-    // ── B — bloco esquerdo, zona média ───────────────────────────────
+    // ── B — Bloco esquerdo ────────────────────────────────────
     EdificioZone(
-        codigo = "B", label = "B",
-        labelX = 0.16f, labelY = 0.57f,
-        zoneLeft = 0.06f, zoneTop = 0.50f,
-        zoneWidth = 0.26f, zoneHeight = 0.12f
+        codigo = "B",
+        labelX = 0.20f, labelY = 0.58f,
+        zoneLeft = 0.12f, zoneTop = 0.54f,
+        zoneWidth = 0.22f, zoneHeight = 0.09f
     ),
 
-    // ── D — bloco direita com forma hexagonal ────────────────────────
+    // ── D — Bloco direito (Encolhido para não bater no C1 nem no C2)
     EdificioZone(
-        codigo = "D", label = "D",
-        labelX = 0.63f, labelY = 0.555f,
-        zoneLeft = 0.46f, zoneTop = 0.50f,
-        zoneWidth = 0.30f, zoneHeight = 0.10f
+        codigo = "D",
+        labelX = 0.70f, labelY = 0.58f,
+        zoneLeft = 0.55f, zoneTop = 0.54f,
+        zoneWidth = 0.28f, zoneHeight = 0.09f
     ),
 
-    // ── C1 — barra fina horizontal, abaixo de B e D ──────────────────
+    // ── C1 — Barra horizontal inferior (Subiu para colar debaixo do B/D)
     EdificioZone(
-        codigo = "C1", label = "C1",
-        labelX = 0.65f, labelY = 0.635f,
-        zoneLeft = 0.20f, zoneTop = 0.61f,
-        zoneWidth = 0.68f, zoneHeight = 0.06f
+        codigo = "C1",
+        labelX = 0.50f, labelY = 0.65f,
+        zoneLeft = 0.20f, zoneTop = 0.63f,
+        zoneWidth = 0.65f, zoneHeight = 0.05f
     ),
 
-    // ── E — triângulo grande no fundo ────────────────────────────────
+    // ── E — Triângulo grande no fundo ─────────────────────────
     EdificioZone(
-        codigo = "E", label = "E",
-        labelX = 0.50f, labelY = 0.88f,
-        zoneLeft = 0.08f, zoneTop = 0.73f,
-        zoneWidth = 0.84f, zoneHeight = 0.24f
+        codigo = "E",
+        labelX = 0.50f, labelY = 0.78f,
+        zoneLeft = 0.10f, zoneTop = 0.70f,
+        zoneWidth = 0.80f, zoneHeight = 0.15f
     )
 )
 
@@ -271,6 +272,27 @@ private fun MapaView(onEdificioClick: (String) -> Unit) {
                     translationX = offset.x, translationY = offset.y
                 )
                 .onSizeChanged { imageSize = it }
+                // O ÚNICO DETETOR DE TOQUES DO MAPA (Gere Cliques e permite o Zoom sem problemas)
+                .pointerInput(Unit) {
+                    detectTapGestures { tapOffset ->
+                        val w = imageSize.width.toFloat()
+                        val h = imageSize.height.toFloat()
+                        if (w > 0 && h > 0) {
+                            // 1. Converte a coordenada do toque numa percentagem (0.0 a 1.0)
+                            val tapX = tapOffset.x / w
+                            val tapY = tapOffset.y / h
+
+                            // 2. Procura na tua lista qual é a zona que corresponde a este X e Y
+                            val clickedZone = edificioZones.find { zone ->
+                                tapX >= zone.zoneLeft && tapX <= (zone.zoneLeft + zone.zoneWidth) &&
+                                        tapY >= zone.zoneTop && tapY <= (zone.zoneTop + zone.zoneHeight)
+                            }
+
+                            // 3. Se tocou num prédio, abre-o!
+                            clickedZone?.let { onEdificioClick(it.codigo) }
+                        }
+                    }
+                }
         ) {
             Image(
                 painter = painterResource(id = R.drawable.mapa_pact_novo),
@@ -278,68 +300,45 @@ private fun MapaView(onEdificioClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )
+            // ==========================================
+            // 🛠 MODO DEBUG: Muda para 'true' para veres as hitboxes vermelhas!
+            // ==========================================
+            val mostrarZonas = false
+
+            if (mostrarZonas && imageSize.width > 0 && imageSize.height > 0) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    edificioZones.forEach { zone ->
+                        drawRect(
+                            color = Color.Red.copy(alpha = 0.4f), // Vermelho transparente
+                            topLeft = androidx.compose.ui.geometry.Offset(
+                                x = zone.zoneLeft * size.width,
+                                y = zone.zoneTop * size.height
+                            ),
+                            size = androidx.compose.ui.geometry.Size(
+                                width = zone.zoneWidth * size.width,
+                                height = zone.zoneHeight * size.height
+                            )
+                        )
+                    }
+                }
+            }
+            // ==========================================
 
             if (imageSize.width > 0 && imageSize.height > 0) {
                 edificioZones.forEach { zone ->
+                    // AS CAIXAS INVISÍVEIS FORAM COMPLETAMENTE REMOVIDAS DAQUI!
 
-                    // Área clicável invisível
-                    Box(
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (zone.zoneLeft * imageSize.width).roundToInt(),
-                                    y = (zone.zoneTop  * imageSize.height).roundToInt()
-                                )
-                            }
-                            .size(
-                                width  = (zone.zoneWidth  * imageSize.width).dp,
-                                height = (zone.zoneHeight * imageSize.height).dp
-                            )
-                            .clickable { onEdificioClick(zone.codigo) }
-                    )
+                    // Chip com label (Tirei também o "clickable" daqui para que os rótulos não empatem o Zoom.
+                    // O clique é detetado na mesma porque o rótulo está por cima da "zona" matemática)
+                     {
 
-                    // Chip com label
-                    Box(
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = (zone.labelX * imageSize.width).roundToInt() - 24,
-                                    y = (zone.labelY * imageSize.height).roundToInt() - 14
-                                )
-                            }
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(PactAccent.copy(alpha = 0.92f))
-                            .border(1.dp, Color.White.copy(0.25f), RoundedCornerShape(8.dp))
-                            .clickable { onEdificioClick(zone.codigo) }
-                            .padding(horizontal = 9.dp, vertical = 5.dp)
-                    ) {
-                        Text(
-                            zone.label,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
                     }
                 }
             }
         }
 
         // Dica
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 14.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(PactCard.copy(alpha = 0.93f))
-                .border(0.5.dp, PactBorder, RoundedCornerShape(20.dp))
-                .padding(horizontal = 14.dp, vertical = 7.dp)
-        ) {
-            Text(
-                "Pinça para zoom · Toca num edifício",
-                fontSize = 11.sp,
-                color = PactMuted
-            )
-        }
+
     }
 }
 

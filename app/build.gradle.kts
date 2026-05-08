@@ -76,6 +76,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 

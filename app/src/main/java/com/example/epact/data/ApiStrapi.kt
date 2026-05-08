@@ -10,7 +10,7 @@ interface StrapiApiService {
     @GET("api/empresas?populate=*")
     suspend fun getEmpresas(): EmpresaResponse
 
-    @GET("api/media-pacts?populate=imagem,video&sort=ordem:asc")
+    @GET("api/media-pacts?populate=*&sort=ordem:asc")
     suspend fun getMediaPact(): MediaPactResponse
 
     @GET("api/edificios?populate=fotos")

@@ -634,60 +634,103 @@ private fun SectionLabel(text: String) {
 
 @Composable
 fun VideoPlayerOverlay(url: String, onDismiss: () -> Unit) {
-    androidx.activity.compose.BackHandler(onBack = onDismiss)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .clickable(onClick = {}),
-        contentAlignment = Alignment.Center
-    ) {
-        // 1. Constrói o URL completo (o Strapi às vezes envia apenas a diretoria "/uploads/...")
-        val baseUrl = "https://meaningful-desire-049927a41b.strapiapp.com"
-        val finalUrl = if (url.startsWith("http")) url else "$baseUrl$url"
+    // 1. Descobre se o telemóvel está na Horizontal ou Vertical
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
-        // 2. O Leitor de Vídeo Nativo
-        androidx.compose.ui.viewinterop.AndroidView(
-            factory = { ctx ->
-                android.widget.VideoView(ctx).apply {
-                    // Diz ao leitor onde está o ficheiro
-                    setVideoURI(android.net.Uri.parse(finalUrl))
+    // 2. Efeito dinâmico: reage sempre que tu rodas o telemóvel
+    androidx.compose.runtime.LaunchedEffect(isLandscape) {
+        val window = activity?.window
+        val insetsController = window?.let { androidx.core.view.WindowInsetsControllerCompat(it, it.decorView) }
 
-                    // Adiciona a barra de controlo (Play, Pause, Barra de Progresso)
-                    val mediaController = android.widget.MediaController(ctx)
-                    mediaController.setAnchorView(this)
-                    setMediaController(mediaController)
+        if (isLandscape) {
+            // Se virou deitado: Modo Cinema! Esconde as horas, bateria e botões de navegação
+            insetsController?.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insetsController?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        } else {
+            // Se está de pé: Mostra as barras normais do Android
+            insetsController?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        }
+    }
 
-                    // Quando o vídeo estiver carregado da net, arranca!
-                    setOnPreparedListener { mp ->
-                        mp.start()
-                    }
+    // Garante que, quando o vídeo fechar, o telemóvel volta ao normal
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            val window = activity?.window
+            val insetsController = window?.let { androidx.core.view.WindowInsetsControllerCompat(it, it.decorView) }
+            insetsController?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        }
+    }
 
-                    // (Opcional) Tocar em loop quando chegar ao fim
-                    setOnCompletionListener { mp ->
-                        mp.start()
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
+    // O Dialog tapa a tua Bottom Navigation Bar da App
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false // Permite ocupar o ecrã a 100% (até ao notch)
         )
-
-        // Botão Fechar no canto superior direito
-        androidx.compose.material3.IconButton(
-            onClick = onDismiss,
+    ) {
+        Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 40.dp, end = 16.dp)
+                .fillMaxSize()
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
         ) {
-            androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Default.Close,
-                contentDescription = "Fechar",
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
+            val baseUrl = "https://meaningful-desire-049927a41b.strapiapp.com"
+            val finalUrl = if (url.startsWith("http")) url else "$baseUrl$url"
+
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { ctx ->
+                    // 1. Criamos um contentor nativo para forçar o centro
+                    val frameLayout = android.widget.FrameLayout(ctx)
+
+                    val videoView = android.widget.VideoView(ctx).apply {
+                        setVideoURI(android.net.Uri.parse(finalUrl))
+
+                        val mediaController = android.widget.MediaController(ctx)
+                        mediaController.setAnchorView(this)
+                        setMediaController(mediaController)
+
+                        setOnPreparedListener { mp ->
+                            mp.start()
+                        }
+                    }
+
+                    // 2. Definimos as regras: Ocupar tudo (Match Parent) e ficar no Centro
+                    val params = android.widget.FrameLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    ).apply {
+                        gravity = android.view.Gravity.CENTER
+                    }
+
+                    // 3. Juntamos tudo
+                    frameLayout.addView(videoView, params)
+                    frameLayout // Retornamos o FrameLayout (que contém o vídeo centrado) em vez do vídeo diretamente
+                },
+                modifier = Modifier.fillMaxSize()
             )
+
+            // 3. Mostra o botão 'X' de Fechar APENAS na vertical.
+            // Na horizontal fica sem distrações (para sair, basta rodar o telemóvel ou usar o gesto de voltar do Android)
+            if (!isLandscape) {
+                androidx.compose.material3.IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 40.dp, end = 16.dp)
+                ) {
+                    androidx.compose.material3.Icon(
+                        androidx.compose.material.icons.Icons.Default.Close,
+                        contentDescription = "Fechar",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
         }
     }
 }
