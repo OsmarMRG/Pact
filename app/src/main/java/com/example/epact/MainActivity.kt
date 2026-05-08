@@ -6,10 +6,11 @@ import androidx.activity.compose.setContent
 import com.example.epact.ui.app.EpactApp
 import com.example.epact.ui.theme.EpactTheme
 import org.osmdroid.config.Configuration
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-
+        installSplashScreen()   // ← esta linha ANTES do super.onCreate
         super.onCreate(savedInstanceState)
         Configuration.getInstance().userAgentValue = packageName
         setContent {
