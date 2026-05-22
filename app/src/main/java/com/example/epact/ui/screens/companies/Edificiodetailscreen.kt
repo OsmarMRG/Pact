@@ -421,14 +421,18 @@ private fun EmpresaRow(empresa: EmpresaData, onClick: () -> Unit) {
 
 // ─── Lightbox fullscreen ──────────────────────────────────────────────────
 
+// ─── Lightbox fullscreen ──────────────────────────────────────────────────
+// Substitui a função FotoLightbox existente por esta versão com HorizontalPager
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FotoLightbox(
     fotos: List<StrapiMediaData>,
     initialIndex: Int,
     onDismiss: () -> Unit
 ) {
-    var currentIndex by remember { mutableStateOf(initialIndex.coerceIn(0, fotos.size - 1)) }
-    val item = fotos[currentIndex]
+    val pagerState = rememberPagerState(initialPage = initialIndex) { fotos.size }
+    val scope = rememberCoroutineScope()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -436,13 +440,21 @@ private fun FotoLightbox(
     ) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-            AsyncImage(
-                model = item.url,
-                contentDescription = item.name,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
+            // ── Pager com swipe ──────────────────────────────────────────
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val item = fotos[page]
+                AsyncImage(
+                    model = item.url,
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit
+                )
+            }
 
+            // ── Gradientes ───────────────────────────────────────────────
             Box(
                 Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter)
                     .background(Brush.verticalGradient(listOf(Color.Black.copy(0.75f), Color.Transparent)))
@@ -452,13 +464,15 @@ private fun FotoLightbox(
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.75f))))
             )
 
+            // ── Contador ─────────────────────────────────────────────────
             Text(
-                "${currentIndex + 1} / ${fotos.size}",
+                "${pagerState.currentPage + 1} / ${fotos.size}",
                 color = Color.White.copy(0.7f),
                 fontSize = 13.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(20.dp)
             )
 
+            // ── Botão fechar ─────────────────────────────────────────────
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
@@ -466,9 +480,10 @@ private fun FotoLightbox(
                 Icon(Icons.Default.Close, "Fechar", tint = Color.White)
             }
 
-            if (currentIndex > 0) {
+            // ── Setas (opcionais, complementam o swipe) ──────────────────
+            if (pagerState.currentPage > 0) {
                 IconButton(
-                    onClick = { currentIndex-- },
+                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) } },
                     modifier = Modifier
                         .align(Alignment.CenterStart).padding(8.dp)
                         .clip(CircleShape).background(Color.Black.copy(0.45f))
@@ -476,9 +491,9 @@ private fun FotoLightbox(
                     Icon(Icons.Default.NavigateBefore, "Anterior", tint = Color.White)
                 }
             }
-            if (currentIndex < fotos.size - 1) {
+            if (pagerState.currentPage < fotos.size - 1) {
                 IconButton(
-                    onClick = { currentIndex++ },
+                    onClick = { scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) } },
                     modifier = Modifier
                         .align(Alignment.CenterEnd).padding(8.dp)
                         .clip(CircleShape).background(Color.Black.copy(0.45f))
@@ -487,6 +502,7 @@ private fun FotoLightbox(
                 }
             }
 
+            // ── Dots ─────────────────────────────────────────────────────
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -496,10 +512,10 @@ private fun FotoLightbox(
                 fotos.indices.forEach { i ->
                     Box(
                         modifier = Modifier
-                            .size(if (i == currentIndex) 8.dp else 5.dp)
+                            .size(if (i == pagerState.currentPage) 8.dp else 5.dp)
                             .clip(CircleShape)
                             .background(
-                                if (i == currentIndex) Color.White
+                                if (i == pagerState.currentPage) Color.White
                                 else Color.White.copy(0.3f)
                             )
                     )

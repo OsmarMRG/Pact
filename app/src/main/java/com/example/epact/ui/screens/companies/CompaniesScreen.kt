@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -94,7 +95,7 @@ private val edificioZones = listOf(
     EdificioZone(
         codigo = "1",
         labelX = 0.50f, labelY = 0.16f,
-        zoneLeft = 0.15f, zoneTop = 0.10f, // Subiu para apanhar o prédio de cima
+        zoneLeft = 0.15f, zoneTop = 0.10f,
         zoneWidth = 0.75f, zoneHeight = 0.12f
     ),
 
@@ -102,7 +103,7 @@ private val edificioZones = listOf(
     EdificioZone(
         codigo = "0",
         labelX = 0.50f, labelY = 0.33f,
-        zoneLeft = 0.10f, zoneTop = 0.26f, // Subiu para apanhar o prédio do meio
+        zoneLeft = 0.10f, zoneTop = 0.26f,
         zoneWidth = 0.80f, zoneHeight = 0.14f
     ),
 
@@ -146,6 +147,21 @@ private val edificioZones = listOf(
         zoneWidth = 0.80f, zoneHeight = 0.15f
     )
 )
+
+// ─── Labels legíveis para cada código de edifício ────────────────────────
+
+private val edificioLabels = mapOf(
+    "0"  to "Piso 0",
+    "1"  to "Piso 1",
+    "B"  to "B",
+    "C1" to "C1",
+    "C2" to "C2",
+    "D"  to "D",
+    "E"  to "E"
+)
+
+private val edificioFilterOptions = listOf("Todos") +
+        listOf("0", "1", "B", "C1", "C2", "D", "E")
 
 // ─── CompaniesScreen ──────────────────────────────────────────────────────
 
@@ -272,23 +288,19 @@ private fun MapaView(onEdificioClick: (String) -> Unit) {
                     translationX = offset.x, translationY = offset.y
                 )
                 .onSizeChanged { imageSize = it }
-                // O ÚNICO DETETOR DE TOQUES DO MAPA (Gere Cliques e permite o Zoom sem problemas)
                 .pointerInput(Unit) {
                     detectTapGestures { tapOffset ->
                         val w = imageSize.width.toFloat()
                         val h = imageSize.height.toFloat()
                         if (w > 0 && h > 0) {
-                            // 1. Converte a coordenada do toque numa percentagem (0.0 a 1.0)
                             val tapX = tapOffset.x / w
                             val tapY = tapOffset.y / h
 
-                            // 2. Procura na tua lista qual é a zona que corresponde a este X e Y
                             val clickedZone = edificioZones.find { zone ->
                                 tapX >= zone.zoneLeft && tapX <= (zone.zoneLeft + zone.zoneWidth) &&
                                         tapY >= zone.zoneTop && tapY <= (zone.zoneTop + zone.zoneHeight)
                             }
 
-                            // 3. Se tocou num prédio, abre-o!
                             clickedZone?.let { onEdificioClick(it.codigo) }
                         }
                     }
@@ -300,16 +312,13 @@ private fun MapaView(onEdificioClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit
             )
-            // ==========================================
-            // 🛠 MODO DEBUG: Muda para 'true' para veres as hitboxes vermelhas!
-            // ==========================================
             val mostrarZonas = false
 
             if (mostrarZonas && imageSize.width > 0 && imageSize.height > 0) {
                 androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                     edificioZones.forEach { zone ->
                         drawRect(
-                            color = Color.Red.copy(alpha = 0.4f), // Vermelho transparente
+                            color = Color.Red.copy(alpha = 0.4f),
                             topLeft = androidx.compose.ui.geometry.Offset(
                                 x = zone.zoneLeft * size.width,
                                 y = zone.zoneTop * size.height
@@ -322,23 +331,48 @@ private fun MapaView(onEdificioClick: (String) -> Unit) {
                     }
                 }
             }
-            // ==========================================
 
             if (imageSize.width > 0 && imageSize.height > 0) {
                 edificioZones.forEach { zone ->
-                    // AS CAIXAS INVISÍVEIS FORAM COMPLETAMENTE REMOVIDAS DAQUI!
-
-                    // Chip com label (Tirei também o "clickable" daqui para que os rótulos não empatem o Zoom.
-                    // O clique é detetado na mesma porque o rótulo está por cima da "zona" matemática)
-                     {
+                    {
 
                     }
                 }
             }
         }
+    }
+}
 
-        // Dica
+// ─── Filtros de Edifício ──────────────────────────────────────────────────
 
+@Composable
+private fun EdificioFilters(
+    selectedEdificio: String,
+    onSelect: (String) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 0.dp)
+    ) {
+        items(edificioFilterOptions) { codigo ->
+            val active = selectedEdificio == codigo
+            val label = if (codigo == "Todos") "Todos" else (edificioLabels[codigo] ?: codigo)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (active) PactOrange else PactCard)
+                    .border(0.5.dp, if (active) PactOrange else PactBorder, RoundedCornerShape(20.dp))
+                    .clickable { onSelect(codigo) }
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    label,
+                    fontSize = 12.sp,
+                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (active) Color.White else PactMuted
+                )
+            }
+        }
     }
 }
 
@@ -350,15 +384,18 @@ private fun ListaView(
     categories: List<String>,
     onCompanyClick: (Int) -> Unit
 ) {
-    var search           by rememberSaveable { mutableStateOf("") }
-    var selectedCategory by rememberSaveable { mutableStateOf("Todos") }
+    var search            by rememberSaveable { mutableStateOf("") }
+    var selectedCategory  by rememberSaveable { mutableStateOf("Todos") }
+    var selectedEdificio  by rememberSaveable { mutableStateOf("Todos") }   // ← novo
 
     val filtered = companies.filter { e ->
         val matchSearch = (e.nome ?: "").contains(search, ignoreCase = true) ||
                 (e.descricao ?: "").contains(search, ignoreCase = true)
         val matchCat = selectedCategory == "Todos" ||
                 e.category?.name?.equals(selectedCategory, ignoreCase = true) == true
-        matchSearch && matchCat
+        val matchEdificio = selectedEdificio == "Todos" ||                   // ← novo
+                e.edificio?.equals(selectedEdificio, ignoreCase = true) == true
+        matchSearch && matchCat && matchEdificio                             // ← novo
     }
 
     LazyColumn(
@@ -383,6 +420,13 @@ private fun ListaView(
                 categories = categories,
                 selectedCategory = selectedCategory,
                 onSelect = { selectedCategory = it }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        item {                                                               // ← novo bloco
+            EdificioFilters(
+                selectedEdificio = selectedEdificio,
+                onSelect = { selectedEdificio = it }
             )
             Spacer(Modifier.height(6.dp))
         }
@@ -410,6 +454,7 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
     val category  = empresa.category?.name ?: "Sem categoria"
     val city      = empresa.city ?: ""
     val logoUrl   = empresa.logoRes?.url
+    val edificio  = empresa.edificio                                         // ← novo
 
     Row(
         modifier = Modifier
@@ -465,6 +510,22 @@ private fun DirectoryRow(empresa: EmpresaData, onClick: () -> Unit) {
                         .border(0.5.dp, PactBorder, RoundedCornerShape(6.dp))
                         .padding(horizontal = 7.dp, vertical = 3.dp)
                 ) { Text(city, fontSize = 10.sp, color = PactMuted) }
+                Spacer(Modifier.height(4.dp))
+            }
+            if (!edificio.isNullOrBlank()) {                                 // ← novo badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(PactOrange.copy(alpha = 0.15f))
+                        .border(0.5.dp, PactOrange.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        edificioLabels[edificio] ?: edificio,
+                        fontSize = 10.sp,
+                        color = PactOrange
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
             }
             Text("›", fontSize = 20.sp, color = PactBorder)
