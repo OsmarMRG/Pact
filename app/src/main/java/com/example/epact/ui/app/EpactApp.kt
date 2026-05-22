@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Icon
@@ -34,24 +33,30 @@ fun EpactApp() {
     val navController = rememberNavController()
     val currentRoute  = navController.currentBackStackEntryAsState().value?.destination?.route
 
+    // "Início" removido — só 3 tabs
     val bottomItems = listOf(
-        BottomItem("Início",   AppDestinations.Welcome),
         BottomItem("Empresas", AppDestinations.Companies),
         BottomItem("Mapa",     AppDestinations.Map),
         BottomItem("Media",    AppDestinations.Media)
     )
 
-    // Esconde a bottom bar nos ecrãs de detalhe
-    val showBottomBar = currentRoute?.startsWith("company/") != true &&
+    // Bottom bar escondida na WelcomeScreen e nos ecrãs de detalhe
+    val showBottomBar = currentRoute != AppDestinations.Welcome &&
+            currentRoute?.startsWith("company/") != true &&
             currentRoute?.startsWith("edificio/") != true
+
+    // Top bar escondida na WelcomeScreen
+    val showTopBar = currentRoute != AppDestinations.Welcome
 
     Scaffold(
         modifier = Modifier.background(PactBlack),
         topBar = {
-            AppTopBar(
-                currentRoute = currentRoute,
-                onBack = { navController.popBackStack() }
-            )
+            if (showTopBar) {
+                AppTopBar(
+                    currentRoute = currentRoute,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         },
         bottomBar = {
             if (showBottomBar) {
@@ -69,7 +74,6 @@ fun EpactApp() {
                     },
                     iconForRoute = { route, label ->
                         when (route) {
-                            AppDestinations.Welcome   -> Icon(Icons.Default.Home,         contentDescription = label)
                             AppDestinations.Companies -> Icon(Icons.Default.Business,     contentDescription = label)
                             AppDestinations.Map       -> Icon(Icons.Default.LocationOn,   contentDescription = label)
                             else                      -> Icon(Icons.Default.PhotoLibrary, contentDescription = label)
@@ -90,7 +94,6 @@ fun EpactApp() {
                     onMapClick       = { navController.navigate(AppDestinations.Map) }
                 )
             }
-
             composable(AppDestinations.Companies) {
                 CompaniesScreen(
                     categories = AppData.categories,
@@ -102,15 +105,12 @@ fun EpactApp() {
                     }
                 )
             }
-
             composable(AppDestinations.CompanyDetail) { backStackEntry ->
                 val companyId = backStackEntry.arguments?.getString("companyId")?.toIntOrNull()
                 if (companyId != null) {
                     CompanyDetailScreen(companyId = companyId)
                 }
             }
-
-            // Ecrã do edifício — hero + lista de empresas
             composable(AppDestinations.EdificioDetail) { backStackEntry ->
                 val codigo = backStackEntry.arguments?.getString("codigoEdificio") ?: ""
                 EdificioDetailScreen(
@@ -120,14 +120,8 @@ fun EpactApp() {
                     }
                 )
             }
-
-            composable(AppDestinations.Map) {
-                MapScreen()
-            }
-
-            composable(AppDestinations.Media) {
-                MediaScreen()
-            }
+            composable(AppDestinations.Map) { MapScreen() }
+            composable(AppDestinations.Media) { MediaScreen() }
         }
     }
 }
